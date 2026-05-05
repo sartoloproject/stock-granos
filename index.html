@@ -5,825 +5,482 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stock de Granos — Gestión de Campo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-<!-- ══════════════════════════════════════════════════════════════
-     FIREBASE — Base de datos en la nube
-     INSTRUCCIONES PARA CONFIGURAR (solo 1 vez):
-     1. Ir a https://console.firebase.google.com
-     2. Crear proyecto → habilitar Realtime Database
-     3. Reemplazar los valores AQUÍ ABAJO con los de tu proyecto
-     ══════════════════════════════════════════════════════════════ -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue, remove }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-  // ▼▼▼ REEMPLAZÁ ESTOS VALORES CON LOS DE TU PROYECTO FIREBASE ▼▼▼
-  const firebaseConfig = {
-  apiKey: "AIzaSyCaXNoQuJZskL4wvCji98njGXQsqmuUQ6o",
-  authDomain: "stockgranos-8de0f.firebaseapp.com",
-  databaseURL: "https://stockgranos-8de0f-default-rtdb.firebaseio.com",
-  projectId: "stockgranos-8de0f",
-  storageBucket: "stockgranos-8de0f.firebasestorage.app",
-  messagingSenderId: "718959653233",
-  appId: "1:718959653233:web:9bc9e555a38abdc309c6d0"
-  };
-  // ▲▲▲ FIN DE CONFIGURACIÓN ▲▲▲
-
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
-
-  // Exponer funciones al scope global para que el resto del código las use
-  window._fbSet    = (path, data) => set(ref(db, path), data);
-  window._fbGet    = (path)       => get(ref(db, path));
-  window._fbRemove = (path)       => remove(ref(db, path));
-  window._fbListen = (path, cb)   => onValue(ref(db, path), snap => cb(snap.val()));
-
-  // Indicador de estado de conexión
-  window._firebaseReady = true;
-  console.log("✅ Firebase conectado");
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #F5F3EE;
-    --bg2: #ECEAE3;
-    --bg3: #E2DFD6;
-    --surface: #FAFAF7;
-    --border: #D4D0C4;
-    --border2: #C2BDB0;
-    --text: #1A1A16;
-    --text2: #5A5750;
-    --text3: #8A857C;
-    --green: #2D6A4F;
-    --green-bg: #D8EDDF;
-    --green-light: #EEF7F1;
-    --amber: #92400E;
-    --amber-bg: #FEF3C7;
-    --red: #9B1C1C;
-    --red-bg: #FEE2E2;
-    --blue: #1E40AF;
-    --blue-bg: #DBEAFE;
-    --soja: #2D6A4F; --soja-bg: #D8EDDF;
-    --maiz: #92400E; --maiz-bg: #FEF3C7;
-    --trigo: #78350F; --trigo-bg: #FDE68A;
-    --sorgo: #831843; --sorgo-bg: #FCE7F3;
-    --radius: 6px;
-    --radius-lg: 10px;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'IBM Plex Sans', sans-serif;
+:root {
+  --bg: #F5F3EE; --bg2: #ECEAE3; --bg3: #E2DFD6;
+  --surface: #FDFCF9; --border: #D4D0C4; --border2: #C0BBB0;
+  --text: #1A1916; --text2: #524F48; --text3: #8A8580;
+  --green: #1A5C38; --green-bg: #D0ECDD; --green-light: #E8F4EE;
+  --amber: #7B3A00; --amber-bg: #FEEFD6;
+  --red: #891818; --red-bg: #FEE2E2;
+  --blue: #1A3D70; --blue-bg: #D6E4F7;
+  --soja: #1A5C38; --soja-bg: #D0ECDD;
+  --maiz: #7B3A00; --maiz-bg: #FEEFD6;
+  --trigo: #6B3800; --trigo-bg: #FDE9B6;
+  --sorgo: #6B1840; --sorgo-bg: #F8DCEB;
+  --radius: 8px; --radius-lg: 13px;
+  --mono: "JetBrains Mono", "IBM Plex Mono", monospace;
+  --sans: "Outfit", system-ui, sans-serif;
+  --ease: cubic-bezier(0.16,1,0.3,1);
+  --ease2: cubic-bezier(0.32,0.72,0,1);
+  --dur: 200ms;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.layout{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:224px;background:#16140F;color:var(--bg);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.04)}
+.sidebar-brand{padding:22px 18px 18px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.sidebar-brand .brand-icon{width:34px;height:34px;background:var(--green);border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:11px;box-shadow:0 3px 10px rgba(26,92,56,0.4)}
+.sidebar-brand .brand-icon svg{width:18px;height:18px;fill:white}
+.brand-name{font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);letter-spacing:0.07em;text-transform:uppercase}
+.brand-sub{font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;font-weight:400}
+.sidebar-nav{padding:10px 0;flex:1;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;font-size:13px;font-weight:400;color:rgba(255,255,255,0.48);cursor:pointer;transition:color var(--dur) var(--ease),background var(--dur) var(--ease);user-select:none;margin:1px 8px;border-radius:8px;position:relative}
+.nav-item:hover{color:rgba(255,255,255,0.88);background:rgba(255,255,255,0.06)}
+.nav-item.active{color:rgba(255,255,255,0.95);background:rgba(255,255,255,0.09);font-weight:500}
+.nav-item.active::before{content:"";position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:16px;background:var(--green);border-radius:0 3px 3px 0}
+.nav-item svg{width:15px;height:15px;fill:currentColor;flex-shrink:0;opacity:0.65}
+.nav-item.active svg{opacity:1}
+.nav-section{padding:13px 14px 5px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.2);letter-spacing:0.1em;text-transform:uppercase;margin:0 8px}
+.sidebar-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,0.07);font-size:11px;color:rgba(255,255,255,0.2)}
+
+/* MAIN */
+.main{margin-left:224px;flex:1;padding:28px 40px;min-width:0;animation:fadeUp 0.3s var(--ease) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* BANNERS */
+.api-banner{background:var(--amber-bg);border:1px solid rgba(123,58,0,0.18);border-radius:var(--radius-lg);padding:13px 16px;margin-bottom:22px;display:flex;align-items:center;gap:12px}
+.api-banner-icon{font-size:15px;flex-shrink:0}
+.api-banner-text{flex:1;font-size:13px;color:var(--amber)}
+.api-banner-text strong{font-weight:600}
+.api-key-input-wrap{display:flex;gap:8px;margin-top:8px}
+.api-key-input-wrap input{flex:1;padding:7px 10px;border:1px solid rgba(123,58,0,0.2);border-radius:var(--radius);background:white;font-family:var(--mono);font-size:12px;color:var(--text)}
+.api-key-input-wrap button{padding:7px 14px;background:var(--amber);color:white;border:none;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px}
+.page-title{font-size:20px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
+.page-sub{font-size:13px;color:var(--text3);margin-top:3px}
+
+/* SECTIONS */
+.section{display:none}
+.section.active{display:block}
+
+/* METRIC CARDS */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:22px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;position:relative;overflow:hidden;transition:box-shadow var(--dur) var(--ease),transform var(--dur) var(--ease)}
+.metric-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.06);transform:translateY(-1px)}
+.metric-card::before{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:var(--green);opacity:0.5}
+.metric-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px}
+.metric-value{font-size:26px;font-weight:300;color:var(--text);font-family:var(--mono);letter-spacing:-0.01em;line-height:1}
+.metric-unit{font-size:12px;color:var(--text3);margin-top:4px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.card-header{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.015)}
+.card-title{font-size:13px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
+.card-body{padding:18px}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:9px 13px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.02);white-space:nowrap}
+td{padding:10px 13px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);transition:background var(--dur) var(--ease)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,0,0,0.016)}
+.num{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+
+/* TAGS */
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:500;letter-spacing:0.02em}
+.tag-soja{background:var(--soja-bg);color:var(--soja)}
+.tag-maiz{background:var(--maiz-bg);color:var(--maiz)}
+.tag-trigo{background:var(--trigo-bg);color:var(--trigo)}
+.tag-sorgo{background:var(--sorgo-bg);color:var(--sorgo)}
+.badge-campo{display:inline-block;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:600;background:var(--text);color:var(--bg);letter-spacing:0.03em}
+.badge-inq{display:inline-block;padding:2px 9px;border-radius:5px;font-size:11px;background:var(--bg3);color:var(--text2);font-weight:500}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;margin-bottom:13px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:12px;font-weight:500;color:var(--text2);letter-spacing:0.01em}
+.form-group input,.form-group select{padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:white;color:var(--text);font-family:var(--sans);font-size:13px;transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease);-webkit-appearance:none}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(26,92,56,0.1)}
+.form-group input.ia-filled{border-color:var(--green);background:var(--green-light)}
+
+/* BUTTONS */
+.btn{padding:9px 18px;border-radius:var(--radius);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all var(--dur) var(--ease);letter-spacing:0.01em}
+.btn:active{transform:scale(0.98)}
+.btn-green{background:var(--green);color:white;width:100%;padding:11px;box-shadow:0 1px 3px rgba(26,92,56,0.22)}
+.btn-green:hover{background:#144A2D;box-shadow:0 3px 10px rgba(26,92,56,0.28)}
+.btn-red{background:var(--red);color:white;width:100%;padding:11px}
+.btn-red:hover{background:#711212}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border2);font-size:12px;padding:7px 14px}
+.btn-outline:hover{background:var(--bg2);border-color:var(--border)}
+
+/* ALERTS */
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:13px;border-left:3px solid;animation:alertIn 0.2s var(--ease) both}
+@keyframes alertIn{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:translateX(0)}}
+.alert-success{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.alert-danger{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+.alert-info{background:var(--blue-bg);color:var(--blue);border-color:var(--blue)}
+.alert-warning{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:18px 0}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:18px}
+.step-block{display:flex;gap:13px}
+.step-num{width:27px;height:27px;border-radius:50%;background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-family:var(--mono);transition:all var(--dur) var(--ease)}
+.step-num.done{background:var(--green);color:white}
+.step-content{flex:1}
+.step-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.step-desc{font-size:12px;color:var(--text3);margin-bottom:11px}
+
+/* PDF DROP */
+.pdf-drop{border:2px dashed var(--border2);border-radius:var(--radius-lg);padding:26px;text-align:center;cursor:pointer;transition:all var(--dur) var(--ease);background:white}
+.pdf-drop:hover{border-color:var(--green);background:var(--green-light)}
+.pdf-drop.loaded{border-style:solid;border-color:var(--green);background:var(--green-light)}
+.pdf-drop.loading{border-style:solid;border-color:rgba(26,92,56,0.4);background:#F0FAF4;cursor:default}
+.pdf-drop-icon{font-size:26px;margin-bottom:6px}
+.pdf-drop-title{font-size:14px;font-weight:500;color:var(--text)}
+.pdf-drop-sub{font-size:12px;color:var(--text3);margin-top:3px}
+
+/* EXTRACTED */
+.extracted-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-top:12px}
+.extracted-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.extracted-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em}
+.ia-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;background:var(--green);color:white;letter-spacing:0.05em}
+.extracted-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border);gap:12px}
+.extracted-row:last-child{border-bottom:none}
+.ext-key{font-size:12px;color:var(--text3);flex-shrink:0}
+.ext-val{font-size:12px;font-weight:500;color:var(--text);text-align:right;font-family:var(--mono)}
+.ext-val.highlight{color:var(--green)}
+
+/* BOLSON CARDS */
+.bolson-grid{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+.bolson-card{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:all var(--dur) var(--ease);display:flex;justify-content:space-between;align-items:center}
+.bolson-card:hover{border-color:var(--border2);box-shadow:0 2px 8px rgba(0,0,0,0.05)}
+.bolson-card.selected{border-color:var(--green);background:var(--green-light);box-shadow:0 0 0 3px rgba(26,92,56,0.08)}
+.bolson-left .bolson-title{font-size:13px;font-weight:500;color:var(--text)}
+.bolson-left .bolson-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.bolson-right{text-align:right}
+.bolson-right .bolson-kg{font-size:15px;font-weight:600;font-family:var(--mono);color:var(--text)}
+.bolson-right .bolson-pct{font-size:11px;color:var(--text3)}
+.progbar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:6px;width:100px}
+.progbar-fill{height:100%;background:var(--green);border-radius:2px;transition:width 0.5s var(--ease)}
+.no-bolsones{padding:14px;text-align:center;font-size:13px;color:var(--text3);background:var(--bg2);border-radius:var(--radius);border:1px dashed var(--border2)}
+
+/* SPINNER */
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin 0.65s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ESTRUCTURA */
+.campo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:15px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;transition:box-shadow var(--dur) var(--ease)}
+.campo-card:hover{box-shadow:0 3px 10px rgba(0,0,0,0.05)}
+.campo-name{font-size:15px;font-weight:600;color:var(--text)}
+.campo-inq{font-size:12px;color:var(--text3);margin-top:2px}
+.lotes-wrap{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.lote-pill{padding:3px 11px;background:var(--bg3);color:var(--text2);border-radius:99px;font-size:12px;font-family:var(--mono);font-weight:500}
+.tipo-ingreso{color:var(--green);font-weight:600;font-size:11px}
+.tipo-egreso{color:var(--red);font-weight:600;font-size:11px}
+.empty-state{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
+.section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+
+/* ── SIDEBAR TOGGLE BUTTON ─────────────────────────────────────────── */
+.sidebar-toggle{
+  display:none;
+  position:fixed;
+  top:14px;left:14px;
+  z-index:200;
+  width:38px;height:38px;
+  background:#16140F;
+  border:none;border-radius:9px;
+  cursor:pointer;
+  align-items:center;justify-content:center;
+  box-shadow:0 2px 10px rgba(0,0,0,0.3);
+  transition:background var(--dur) var(--ease);
+  flex-direction:column;gap:5px;padding:9px;
+}
+.sidebar-toggle span{
+  display:block;width:20px;height:2px;
+  background:rgba(255,255,255,0.8);
+  border-radius:2px;
+  transition:all 0.2s var(--ease);
+  transform-origin:center;
+}
+.sidebar-toggle.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.sidebar-toggle.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.sidebar-toggle.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* ── SIDEBAR OVERLAY ───────────────────────────────────────────────── */
+.sidebar-overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.5);
+  z-index:99;
+  backdrop-filter:blur(2px);
+  opacity:0;
+  transition:opacity 0.25s var(--ease);
+}
+.sidebar-overlay.visible{opacity:1}
+
+/* ── RESPONSIVE — Laptop 1366×768 con zoom ─────────────────────────── */
+@media(max-width:1100px){
+  .metrics-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .form-grid-3{grid-template-columns:1fr 1fr}
+  .main{padding:24px 22px}
+  .acopio-cards-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+  .chofer-cards-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+  .camion-cards-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+}
+
+/* ── RESPONSIVE — Sidebar colapsable (≤900px o zoom alto en laptop) ── */
+@media(max-width:900px){
+  .sidebar-toggle{display:flex}
+  .sidebar-overlay{display:block}
+
+  .sidebar{
+    transform:translateX(-100%);
+    transition:transform 0.28s var(--ease);
+    z-index:150;
+    box-shadow:none;
+  }
+  .sidebar.open{
+    transform:translateX(0);
+    box-shadow:4px 0 30px rgba(0,0,0,0.35);
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: var(--sans);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 14px;
-    line-height: 1.5;
+  .main{
+    margin-left:0;
+    padding:20px 18px;
+    padding-top:66px; /* espacio para el botón ☰ */
+    max-width:100%;
   }
 
-  /* LAYOUT */
-  .layout { display: flex; min-height: 100vh; }
+  .metrics-grid{grid-template-columns:1fr 1fr;gap:9px}
+  .form-grid-3{grid-template-columns:1fr 1fr}
+  .topbar{flex-direction:column;gap:6px}
+}
 
-  /* SIDEBAR */
-  .sidebar {
-    width: 220px;
-    background: var(--text);
-    color: var(--bg);
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    position: fixed;
-    top: 0; left: 0;
-    height: 100vh;
-    z-index: 100;
-    flex-shrink: 0;
-  }
-  .sidebar-brand {
-    padding: 24px 20px 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-  .sidebar-brand .brand-icon {
-    width: 32px; height: 32px;
-    background: var(--green);
-    border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 10px;
-  }
-  .sidebar-brand .brand-icon svg { width: 18px; height: 18px; fill: white; }
-  .brand-name {
-    font-size: 13px; font-weight: 600; color: white;
-    letter-spacing: 0.02em;
-  }
-  .brand-sub {
-    font-size: 11px; color: rgba(255,255,255,0.4);
-    margin-top: 2px;
-  }
-  .sidebar-nav { padding: 12px 0; flex: 1; }
-  .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 20px;
-    font-size: 13px; font-weight: 400;
-    color: rgba(255,255,255,0.55);
-    cursor: pointer;
-    transition: all 0.15s;
-    border-left: 2px solid transparent;
-    user-select: none;
-  }
-  .nav-item:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.05); }
-  .nav-item.active { color: white; border-left-color: var(--green); background: rgba(255,255,255,0.07); }
-  .nav-item svg { width: 15px; height: 15px; fill: currentColor; flex-shrink: 0; opacity: 0.8; }
-  .nav-section {
-    padding: 16px 20px 6px;
-    font-size: 10px; font-weight: 500;
-    color: rgba(255,255,255,0.25);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-  .sidebar-footer {
-    padding: 16px 20px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    font-size: 11px;
-    color: rgba(255,255,255,0.25);
-  }
+/* ── RESPONSIVE — Mobile (≤600px) ─────────────────────────────────── */
+@media(max-width:600px){
+  .main{padding:14px 13px;padding-top:62px}
+  .metrics-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .metric-value{font-size:20px}
+  .form-grid,.form-grid-3{grid-template-columns:1fr}
+  .acopio-cards-grid,.chofer-cards-grid,.camion-cards-grid{grid-template-columns:1fr}
+  .card-body{padding:14px}
+  .topbar{flex-direction:column;gap:6px}
+  .page-title{font-size:17px}
+  .edit-modal,.cargas-modal{max-width:100%;border-radius:12px}
+  .edit-modal-body,.cargas-modal-body{padding:14px}
+  .mes-selector{gap:4px}
+  .mes-btn{padding:4px 10px;font-size:11px}
+}
 
-  /* MAIN */
-  .main { margin-left: 220px; flex: 1; padding: 32px; max-width: 1100px; }
+/* ACOPIOS */
+.acopio-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;margin-top:14px}
+.acopio-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:17px;cursor:pointer;transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease),transform var(--dur) var(--ease)}
+.acopio-card:hover{border-color:var(--green);box-shadow:0 4px 14px rgba(26,92,56,0.1);transform:translateY(-2px)}
+.acopio-card-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.4}
+.acopio-card-cuit{font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
+.acopio-card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:13px}
+.acopio-stat{text-align:center;padding:8px 4px;background:var(--bg2);border-radius:var(--radius)}
+.acopio-stat-val{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--text)}
+.acopio-stat-lbl{font-size:10px;color:var(--text3);margin-top:3px}
+.cc-back{background:var(--bg2);border:1px solid var(--border);padding:6px 14px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text2);font-family:var(--sans);transition:all var(--dur) var(--ease)}
+.cc-back:hover{background:var(--bg3)}
+.mov-tipo-pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em}
+.pill-entrega{background:var(--green-bg);color:var(--green)}
+.pill-merma{background:var(--amber-bg);color:var(--amber)}
+.pill-liquidacion{background:var(--blue-bg);color:var(--blue)}
+.mov-entrega td:first-child{border-left:3px solid var(--green)}
+.mov-merma td:first-child{border-left:3px solid var(--amber)}
+.mov-liquidacion td:first-child{border-left:3px solid var(--blue)}
+.saldo-positivo{color:var(--green);font-weight:600}
+.saldo-cero{color:var(--text3)}
+.saldo-negativo{color:var(--red);font-weight:600}
+.fin-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bg3);font-size:13px}
+.fin-row:last-child{border-bottom:none}
+.fin-row-total{background:var(--green-light);padding:11px 13px;border-radius:var(--radius);margin-top:8px}
 
-  /* API KEY BANNER */
-  .api-banner {
-    background: var(--amber-bg);
-    border: 1px solid #FCD34D;
-    border-radius: var(--radius-lg);
-    padding: 14px 18px;
-    margin-bottom: 24px;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .api-banner-icon { font-size: 18px; flex-shrink: 0; }
-  .api-banner-text { flex: 1; font-size: 13px; color: var(--amber); }
-  .api-banner-text strong { font-weight: 600; }
-  .api-key-input-wrap { display: flex; gap: 8px; margin-top: 8px; }
-  .api-key-input-wrap input {
-    flex: 1; padding: 7px 10px;
-    border: 1px solid #FCD34D;
-    border-radius: var(--radius);
-    background: white;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text);
-  }
-  .api-key-input-wrap button {
-    padding: 7px 14px;
-    background: var(--amber);
-    color: white;
-    border: none;
-    border-radius: var(--radius);
-    font-size: 12px; font-weight: 500;
-    cursor: pointer;
-  }
+/* FLETES */
+.chofer-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:14px}
+.chofer-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:17px;cursor:pointer;transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease),transform var(--dur) var(--ease)}
+.chofer-card:hover{border-color:var(--blue);box-shadow:0 4px 14px rgba(26,61,112,0.1);transform:translateY(-2px)}
+.chofer-card-name{font-size:13px;font-weight:600;color:var(--text)}
+.chofer-card-dom{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:3px}
+.chofer-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:13px}
+.chofer-stat{text-align:center;padding:7px 4px;background:var(--bg2);border-radius:var(--radius)}
+.chofer-stat-val{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--text)}
+.chofer-stat-lbl{font-size:10px;color:var(--text3);margin-top:3px}
+.mes-selector{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 0;margin-bottom:4px}
+.mes-btn{padding:5px 14px;border-radius:99px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:12px;color:var(--text2);font-family:var(--sans);transition:all var(--dur) var(--ease)}
+.mes-btn.active{background:var(--blue);border-color:var(--blue);color:white;font-weight:600}
+.mes-btn:hover:not(.active){border-color:var(--blue);color:var(--blue)}
+.liq-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-top:12px}
+.liq-block-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px}
+.liq-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bg3);font-size:13px}
+.liq-row:last-child{border-bottom:none}
+.liq-total{background:var(--blue-bg);padding:11px 13px;border-radius:var(--radius);margin-top:8px;display:flex;justify-content:space-between;align-items:center}
+.liq-neto{background:var(--green-light);padding:11px 13px;border-radius:var(--radius);margin-top:6px;display:flex;justify-content:space-between;align-items:center}
+.pill-viaje{background:var(--blue-bg);color:var(--blue)}
+.pill-gasto{background:var(--red-bg);color:var(--red)}
+.pill-anticipo{background:var(--amber-bg);color:var(--amber)}
+.pill-adelanto{background:#EDE9FE;color:#5B21B6}
 
-  /* TOPBAR */
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 28px;
-  }
-  .page-title { font-size: 22px; font-weight: 600; color: var(--text); }
-  .page-sub { font-size: 13px; color: var(--text3); margin-top: 2px; }
+/* CAMIONES */
+.camion-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:14px}
+.camion-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:17px;cursor:pointer;transition:border-color var(--dur) var(--ease),transform var(--dur) var(--ease)}
+.camion-card:hover{border-color:var(--blue);transform:translateY(-2px)}
+.camion-card-dom{font-size:14px;font-weight:700;color:var(--text);font-family:var(--mono)}
+.camion-card-chofer{font-size:12px;color:var(--text3);margin-top:3px}
+.camion-kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:13px}
+.camion-kpi-item{text-align:center;padding:7px 4px;background:var(--bg2);border-radius:var(--radius)}
+.camion-kpi-val{font-size:13px;font-weight:600;font-family:var(--mono)}
+.camion-kpi-lbl{font-size:10px;color:var(--text3);margin-top:2px}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.config-field{display:flex;flex-direction:column;gap:4px}
+.config-field label{font-size:11px;color:var(--text3);font-weight:500}
+.config-field input{padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:var(--mono);background:var(--surface);color:var(--text);transition:border-color var(--dur) var(--ease)}
+.config-field input:focus{outline:none;border-color:var(--green)}
+.config-section-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px}
+.costo-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bg3);font-size:13px}
+.costo-row:last-child{border-bottom:none}
+.costo-cat{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;text-transform:uppercase}
+.cat-fijo{background:#EDE9FE;color:#5B21B6}
+.cat-km{background:var(--blue-bg);color:var(--blue)}
+.cat-var{background:var(--amber-bg);color:var(--amber)}
+.cat-sueldo{background:var(--green-bg);color:var(--green)}
 
-  /* SECTIONS */
-  .section { display: none; }
-  .section.active { display: block; }
+/* COMBUSTIBLE */
+.comb-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+.comb-tab{padding:8px 18px;border:none;background:none;font-size:13px;color:var(--text3);cursor:pointer;font-family:var(--sans);transition:color var(--dur) var(--ease)}
+.comb-tab.active{font-weight:600;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:-2px}
+.lote-pill-entry{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:var(--green-bg);color:var(--green);border-radius:99px;font-size:11px;font-weight:600}
+.saldo-bar{height:7px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-top:6px}
+.saldo-bar-fill{height:100%;background:var(--green);border-radius:99px;transition:width 0.5s var(--ease)}
+.saldo-bar-fill.warn{background:var(--amber)}
+.saldo-bar-fill.low{background:var(--red)}
+.retiro-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px 15px;margin-bottom:9px}
+.retiro-card-top{display:flex;justify-content:space-between;align-items:flex-start}
+.retiro-act-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;text-transform:uppercase}
+.act-flete{background:var(--blue-bg);color:var(--blue)}
+.act-cosecha{background:#FEF3C7;color:#7C3A00}
+.act-otro{background:var(--bg3);color:var(--text3)}
+.medidor-display{background:#111;border-radius:7px;padding:8px 12px;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono)}
+.medidor-digits{font-size:22px;font-weight:700;color:#00FF88;letter-spacing:3px}
+.medidor-label{font-size:10px;color:#666}
+.foto-thumb{width:60px;height:60px;object-fit:cover;border-radius:7px;border:1px solid var(--border);cursor:pointer;transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+.foto-thumb:hover{transform:scale(1.06);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+.foto-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px)}
+.foto-modal-img{max-width:90vw;max-height:85vh;border-radius:10px;object-fit:contain}
 
-  /* METRIC CARDS */
-  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-  .metric-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 16px 18px;
-  }
-  .metric-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-  .metric-value { font-size: 26px; font-weight: 300; color: var(--text); font-family: var(--mono); }
-  .metric-unit { font-size: 13px; color: var(--text3); margin-top: 2px; }
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:#14120D;display:flex;align-items:center;justify-content:center;z-index:99999;font-family:var(--sans)}
+.login-box{background:#1C1A13;border:1px solid rgba(255,255,255,0.09);border-radius:18px;padding:42px 38px;width:100%;max-width:360px;box-shadow:0 28px 64px rgba(0,0,0,.55);text-align:center}
+.login-icon{width:54px;height:54px;background:var(--green);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;box-shadow:0 4px 18px rgba(26,92,56,0.45)}
+.login-icon svg{width:28px;height:28px;fill:white}
+.login-title{font-size:18px;font-weight:600;color:rgba(255,255,255,0.92);margin-bottom:5px;letter-spacing:-0.01em}
+.login-sub{font-size:13px;color:rgba(255,255,255,0.38);margin-bottom:28px}
+.login-field{width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-family:var(--mono);font-size:16px;color:rgba(255,255,255,0.9);background:rgba(255,255,255,0.06);text-align:center;letter-spacing:4px;margin-bottom:12px;transition:all var(--dur) var(--ease)}
+.login-field:focus{outline:none;border-color:rgba(26,92,56,0.65);box-shadow:0 0 0 3px rgba(26,92,56,0.18);background:rgba(255,255,255,0.09)}
+.login-field.error{border-color:rgba(139,24,24,0.75);background:rgba(139,24,24,0.12);animation:shake 0.35s}
+.login-btn{width:100%;padding:12px;background:var(--green);color:white;border:none;border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:all var(--dur) var(--ease);margin-bottom:10px;letter-spacing:0.01em}
+.login-btn:hover{background:#144A2D;transform:translateY(-1px);box-shadow:0 5px 18px rgba(26,92,56,0.38)}
+.login-btn:active{transform:scale(0.98)}
+.login-error{font-size:12px;color:#FC8888;background:rgba(139,24,24,0.2);border:1px solid rgba(139,24,24,0.3);border-radius:var(--radius);padding:8px 12px;margin-bottom:10px;display:none}
+.login-hint{font-size:11px;color:rgba(255,255,255,0.2);margin-top:8px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
-  /* CARDS */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    margin-bottom: 16px;
-    overflow: hidden;
-  }
-  .card-header {
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .card-title { font-size: 13px; font-weight: 600; color: var(--text); }
-  .card-body { padding: 18px; }
+/* MULTI-LOTE */
+.lote-row{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;margin-bottom:6px;animation:fadeIn 0.2s var(--ease) both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.lote-row select,.lote-row input{flex:1;min-width:0}
+.lote-row-del{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--red-bg);color:var(--red);border:1px solid rgba(139,24,24,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;font-weight:700;line-height:1;transition:all var(--dur) var(--ease)}
+.lote-row-del:hover{background:var(--red);color:#fff}
+.lote-total-bar{display:flex;align-items:center;justify-content:space-between;background:var(--green-light);border:1px solid rgba(26,92,56,0.22);border-radius:var(--radius);padding:8px 12px;margin-top:8px}
+.lote-total-label{font-size:12px;color:var(--green);font-weight:500}
+.lote-total-val{font-size:15px;font-weight:700;color:var(--green);font-family:var(--mono)}
+.add-lote-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px dashed rgba(26,92,56,0.38);border-radius:var(--radius);background:none;color:var(--green);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);margin-top:4px;transition:all var(--dur) var(--ease)}
+.add-lote-btn:hover{background:var(--green-light);border-style:solid}
 
-  /* TABLES */
-  table { width: 100%; border-collapse: collapse; }
-  th {
-    text-align: left; padding: 8px 12px;
-    font-size: 11px; font-weight: 500;
-    color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg2);
-  }
-  td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text); }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--bg); }
-  .num { font-family: var(--mono); font-size: 12px; }
+/* MULTI-BOLSON EGRESO */
+.bolson-sel-list{margin-top:10px}
+.bolson-sel-item{display:flex;align-items:center;gap:8px;background:var(--green-light);border:1px solid rgba(26,92,56,0.22);border-radius:var(--radius);padding:8px 12px;margin-bottom:6px;animation:fadeIn 0.2s var(--ease) both}
+.bolson-sel-info{flex:1;min-width:0}
+.bolson-sel-id{font-size:12px;font-weight:700;color:var(--green)}
+.bolson-sel-meta{font-size:11px;color:var(--text3)}
+.bolson-sel-kg{width:110px;flex-shrink:0}
+.bolson-sel-del{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--red-bg);color:var(--red);border:1px solid rgba(139,24,24,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;font-weight:700;transition:all var(--dur) var(--ease)}
+.bolson-sel-del:hover{background:var(--red);color:#fff}
+.egr-total-bar{display:flex;align-items:center;justify-content:space-between;background:var(--red-bg);border:1px solid rgba(139,24,24,0.2);border-radius:var(--radius);padding:8px 12px;margin-top:8px}
+.egr-total-label{font-size:12px;color:var(--red);font-weight:500}
+.egr-total-val{font-size:15px;font-weight:700;color:var(--red);font-family:var(--mono)}
+.bolson-add-btn{margin-left:auto;padding:3px 10px;border-radius:var(--radius);border:1px solid var(--green);background:var(--green-light);color:var(--green);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);white-space:nowrap;flex-shrink:0;transition:all var(--dur) var(--ease)}
+.bolson-add-btn:hover{background:var(--green);color:#fff}
+.bolson-add-btn.ya-sel{border-color:var(--border2);background:var(--bg3);color:var(--text3);cursor:default}
+.modo-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.modo-tab{padding:10px 22px;border:none;background:none;font-size:13px;color:var(--text3);cursor:pointer;font-family:var(--sans);font-weight:500;transition:all var(--dur) var(--ease)}
+.modo-tab.active{color:var(--green);border-bottom:2px solid var(--green);margin-bottom:-2px;font-weight:600}
+.modo-tab:hover:not(.active){color:var(--text);background:var(--bg2)}
+.busq-tab{font-size:12px !important;padding:6px 14px !important}
+.busq-tab.active{background:var(--green) !important;color:#fff !important;border-color:var(--green) !important}
+.foto-preview-grid{display:flex;gap:8px;flex-wrap:wrap}
+.foto-item-wrap{position:relative;display:inline-block}
+.foto-item-del{position:absolute;top:-5px;right:-5px;width:18px;height:18px;background:var(--red);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25);line-height:1}
+.foto-add-btn{width:62px;height:62px;border:2px dashed var(--border2);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:24px;transition:all var(--dur) var(--ease);flex-shrink:0}
+.foto-add-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-light)}
 
-  /* TAGS */
-  .tag {
-    display: inline-block; padding: 2px 9px;
-    border-radius: 99px; font-size: 11px; font-weight: 500;
-  }
-  .tag-soja { background: var(--soja-bg); color: var(--soja); }
-  .tag-maiz { background: var(--maiz-bg); color: var(--maiz); }
-  .tag-trigo { background: var(--trigo-bg); color: var(--trigo); }
-  .tag-sorgo { background: var(--sorgo-bg); color: var(--sorgo); }
-  .badge-campo {
-    display: inline-block; padding: 2px 8px;
-    border-radius: 4px; font-size: 11px; font-weight: 600;
-    background: var(--text); color: var(--bg);
-    letter-spacing: 0.03em;
-  }
-  .badge-inq {
-    display: inline-block; padding: 2px 8px;
-    border-radius: 4px; font-size: 11px;
-    background: var(--bg3); color: var(--text2);
-  }
+/* MODALS */
+.cargas-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.cargas-modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:660px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.25);animation:modalIn 0.25s var(--ease) both}
+@keyframes modalIn{from{opacity:0;transform:scale(0.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.cargas-modal-header{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.cargas-modal-body{padding:15px 20px;overflow-y:auto;flex:1}
+.cargas-modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);line-height:1;padding:0 4px;transition:color var(--dur) var(--ease)}
+.cargas-modal-close:hover{color:var(--text)}
+.carga-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:9px}
+.carga-item:last-child{margin-bottom:0}
+.carga-item-top{display:flex;justify-content:space-between;align-items:flex-start}
+.carga-item-kg{font-size:16px;font-weight:700;font-family:var(--mono);color:var(--green)}
+.carga-item-fecha{font-size:12px;color:var(--text3);margin-top:2px}
+.carga-item-obs{font-size:12px;color:var(--text2);margin-top:6px;font-style:italic}
+.carga-item-fotos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.carga-item-num{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.accion-btn{padding:3px 8px;border-radius:var(--radius);font-size:11px;font-family:var(--sans);cursor:pointer;border:1px solid;transition:all var(--dur) var(--ease);white-space:nowrap}
+.accion-edit{color:var(--blue);border-color:#BFDBFE;background:#EFF6FF}
+.accion-edit:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.accion-del{color:var(--red);border-color:rgba(139,24,24,0.2);background:var(--red-bg)}
+.accion-del:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.confirm-inline{display:inline-flex;gap:4px;align-items:center;background:var(--red-bg);border:1px solid rgba(139,24,24,0.2);border-radius:var(--radius);padding:3px 6px}
+.confirm-inline span{font-size:11px;color:var(--red);font-weight:500}
+.confirm-inline button{font-size:10px;padding:2px 7px;border-radius:3px;border:none;cursor:pointer;font-family:var(--sans);font-weight:600}
+.confirm-si{background:var(--red);color:#fff}
+.confirm-no{background:var(--bg3);color:var(--text2)}
+.edit-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9997;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.edit-modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.25);animation:modalIn 0.25s var(--ease) both}
+.edit-modal-header{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.edit-modal-body{padding:20px;overflow-y:auto;flex:1}
+.edit-modal-footer{padding:13px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+.edit-modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);line-height:1;padding:0 4px;transition:color var(--dur) var(--ease)}
+.edit-modal-close:hover{color:var(--text)}
+.edit-section-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.edit-section-title:first-child{margin-top:0}
 
-  /* FORMS */
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-  .form-group { display: flex; flex-direction: column; gap: 5px; }
-  .form-group label { font-size: 12px; font-weight: 500; color: var(--text2); }
-  .form-group input, .form-group select {
-    padding: 8px 10px;
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    background: white;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 13px;
-    transition: border-color 0.15s;
-  }
-  .form-group input:focus, .form-group select:focus {
-    outline: none; border-color: var(--green);
-    box-shadow: 0 0 0 3px rgba(45,106,79,0.1);
-  }
-  .form-group input.ia-filled { border-color: var(--green); background: var(--green-light); }
-
-  .btn {
-    padding: 9px 18px;
-    border-radius: var(--radius);
-    font-family: var(--sans);
-    font-size: 13px; font-weight: 500;
-    cursor: pointer; border: none;
-    transition: all 0.15s;
-  }
-  .btn-green { background: var(--green); color: white; width: 100%; padding: 11px; }
-  .btn-green:hover { background: #236040; }
-  .btn-red { background: var(--red); color: white; width: 100%; padding: 11px; }
-  .btn-red:hover { background: #7B1818; }
-  .btn-outline {
-    background: transparent; color: var(--text2);
-    border: 1px solid var(--border2);
-    font-size: 12px; padding: 7px 14px;
-  }
-  .btn-outline:hover { background: var(--bg2); }
-
-  /* ALERTS */
-  .alert {
-    padding: 10px 14px; border-radius: var(--radius);
-    font-size: 13px; margin-bottom: 14px;
-    border-left: 3px solid;
-  }
-  .alert-success { background: var(--green-bg); color: var(--green); border-color: var(--green); }
-  .alert-danger { background: var(--red-bg); color: var(--red); border-color: var(--red); }
-  .alert-info { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
-  .alert-warning { background: var(--amber-bg); color: var(--amber); border-color: var(--amber); }
-
-  /* DIVIDER */
-  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
-
-  /* STEPS */
-  .steps { display: flex; flex-direction: column; gap: 20px; }
-  .step-block { display: flex; gap: 14px; }
-  .step-num {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: var(--bg3); color: var(--text2);
-    font-size: 12px; font-weight: 600;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; margin-top: 2px;
-    font-family: var(--mono);
-  }
-  .step-num.done { background: var(--green); color: white; }
-  .step-content { flex: 1; }
-  .step-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
-  .step-desc { font-size: 12px; color: var(--text3); margin-bottom: 12px; }
-
-  /* PDF DROP */
-  .pdf-drop {
-    border: 2px dashed var(--border2);
-    border-radius: var(--radius-lg);
-    padding: 28px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.15s;
-    background: white;
-  }
-  .pdf-drop:hover { border-color: var(--green); background: var(--green-light); }
-  .pdf-drop.loaded { border-style: solid; border-color: var(--green); background: var(--green-light); }
-  .pdf-drop.loading { border-style: solid; border-color: #93C4A5; background: #F0FAF4; cursor: default; }
-  .pdf-drop-icon { font-size: 28px; margin-bottom: 6px; }
-  .pdf-drop-title { font-size: 14px; font-weight: 500; color: var(--text); }
-  .pdf-drop-sub { font-size: 12px; color: var(--text3); margin-top: 3px; }
-
-  /* EXTRACTED DATA */
-  .extracted-box {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 14px;
-    margin-top: 12px;
-  }
-  .extracted-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  .extracted-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
-  .ia-pill {
-    display: inline-flex; align-items: center; gap: 3px;
-    padding: 2px 8px; border-radius: 99px;
-    font-size: 10px; font-weight: 600;
-    background: var(--green); color: white;
-    letter-spacing: 0.05em;
-  }
-  .extracted-row {
-    display: flex; justify-content: space-between; align-items: baseline;
-    padding: 5px 0;
-    border-bottom: 1px solid var(--border);
-    gap: 12px;
-  }
-  .extracted-row:last-child { border-bottom: none; }
-  .ext-key { font-size: 12px; color: var(--text3); flex-shrink: 0; }
-  .ext-val { font-size: 12px; font-weight: 500; color: var(--text); text-align: right; font-family: var(--mono); }
-  .ext-val.highlight { color: var(--green); }
-
-  /* BOLSON CARDS */
-  .bolson-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-  .bolson-card {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 14px;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .bolson-card:hover { border-color: var(--border2); background: var(--bg); }
-  .bolson-card.selected { border-color: var(--green); background: var(--green-light); }
-  .bolson-left .bolson-title { font-size: 13px; font-weight: 500; color: var(--text); }
-  .bolson-left .bolson-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
-  .bolson-right { text-align: right; }
-  .bolson-right .bolson-kg { font-size: 15px; font-weight: 600; font-family: var(--mono); color: var(--text); }
-  .bolson-right .bolson-pct { font-size: 11px; color: var(--text3); }
-  .progbar { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-top: 6px; width: 100px; }
-  .progbar-fill { height: 100%; background: var(--green); border-radius: 2px; }
-  .no-bolsones {
-    padding: 14px;
-    text-align: center; font-size: 13px; color: var(--text3);
-    background: var(--bg2); border-radius: var(--radius);
-    border: 1px dashed var(--border2);
-  }
-
-  /* SPINNER */
-  .spinner {
-    display: inline-block; width: 14px; height: 14px;
-    border: 2px solid var(--border2);
-    border-top-color: var(--green);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    vertical-align: middle; margin-right: 6px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ESTRUCTURA */
-  .campo-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 16px 18px;
-    margin-bottom: 12px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .campo-name { font-size: 15px; font-weight: 600; color: var(--text); }
-  .campo-inq { font-size: 12px; color: var(--text3); margin-top: 2px; }
-  .lotes-wrap { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-  .lote-pill {
-    padding: 4px 12px;
-    background: var(--bg3); color: var(--text2);
-    border-radius: 99px; font-size: 12px;
-    font-family: var(--mono); font-weight: 500;
-  }
-
-  /* MOVIMIENTOS badge */
-  .tipo-ingreso { color: var(--green); font-weight: 600; font-size: 11px; }
-  .tipo-egreso { color: var(--red); font-weight: 600; font-size: 11px; }
-
-  /* EMPTY */
-  .empty-state {
-    padding: 40px 20px; text-align: center;
-    color: var(--text3); font-size: 13px;
-  }
-
-  /* SECTION label */
-  .section-label {
-    font-size: 11px; font-weight: 600;
-    color: var(--text3); text-transform: uppercase;
-    letter-spacing: 0.08em; margin-bottom: 8px;
-  }
-
-  /* RESPONSIVE */
-  @media (max-width: 768px) {
-    .sidebar { width: 0; overflow: hidden; }
-    .main { margin-left: 0; padding: 16px; }
-    .metrics-grid { grid-template-columns: 1fr 1fr; }
-    .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
-  }
-
-  /* ── MÓDULO ACOPIOS ─────────────────────────────────────────── */
-  .acopio-cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    gap: 14px;
-    margin-top: 16px;
-  }
-  .acopio-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 18px;
-    cursor: pointer;
-    transition: border-color .15s, box-shadow .15s;
-  }
-  .acopio-card:hover { border-color: var(--green); box-shadow: 0 2px 8px rgba(45,106,79,.10); }
-  .acopio-card-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; }
-  .acopio-card-cuit { font-size: 11px; color: var(--text3); margin-top: 3px; font-family: var(--mono); }
-  .acopio-card-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; }
-  .acopio-stat { text-align: center; padding: 8px 4px; background: var(--bg2); border-radius: var(--radius); }
-  .acopio-stat-val { font-size: 13px; font-weight: 600; font-family: var(--mono); color: var(--text); }
-  .acopio-stat-lbl { font-size: 10px; color: var(--text3); margin-top: 3px; }
-
-  /* Cuenta corriente */
-  .cc-back {
-    background: var(--bg2); border: 1px solid var(--border);
-    padding: 6px 14px; border-radius: var(--radius);
-    cursor: pointer; font-size: 13px; color: var(--text2);
-    font-family: var(--sans);
-  }
-  .cc-back:hover { background: var(--bg3); }
-
-  .mov-tipo-pill {
-    font-size: 10px; font-weight: 600; padding: 2px 8px;
-    border-radius: 4px; text-transform: uppercase; letter-spacing: .04em;
-  }
-  .pill-entrega    { background: var(--green-bg); color: var(--green); }
-  .pill-merma      { background: var(--amber-bg); color: var(--amber); }
-  .pill-liquidacion{ background: var(--blue-bg);  color: var(--blue);  }
-
-  .mov-entrega    td:first-child { border-left: 3px solid var(--green); }
-  .mov-merma      td:first-child { border-left: 3px solid var(--amber); }
-  .mov-liquidacion td:first-child { border-left: 3px solid var(--blue); }
-
-  .saldo-positivo { color: var(--green); font-weight: 600; }
-  .saldo-cero     { color: var(--text3); }
-  .saldo-negativo { color: var(--red); font-weight: 600; }
-
-  .fin-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 9px 0; border-bottom: 1px solid var(--bg3);
-    font-size: 13px;
-  }
-  .fin-row:last-child { border-bottom: none; }
-  .fin-row-total {
-    background: var(--green-light); padding: 12px 14px;
-    border-radius: var(--radius); margin-top: 8px;
-  }
-
-  /* ── MÓDULO FLETES ──────────────────────────────────────────── */
-  .chofer-cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 14px; margin-top: 16px;
-  }
-  .chofer-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-lg); padding: 18px;
-    cursor: pointer; transition: border-color .15s, box-shadow .15s;
-  }
-  .chofer-card:hover { border-color: var(--blue); box-shadow: 0 2px 8px rgba(30,64,175,.10); }
-  .chofer-card-name { font-size: 13px; font-weight: 600; color: var(--text); }
-  .chofer-card-dom  { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top:3px; }
-  .chofer-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:14px; }
-  .chofer-stat { text-align:center; padding:8px 4px; background:var(--bg2); border-radius:var(--radius); }
-  .chofer-stat-val { font-size:13px; font-weight:600; font-family:var(--mono); color:var(--text); }
-  .chofer-stat-lbl { font-size:10px; color:var(--text3); margin-top:3px; }
-
-  .mes-selector {
-    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-    padding: 12px 0; margin-bottom: 4px;
-  }
-  .mes-btn {
-    padding: 5px 14px; border-radius: 99px; border: 1px solid var(--border2);
-    background: var(--surface); cursor: pointer; font-size: 12px;
-    color: var(--text2); font-family: var(--sans); transition: all .15s;
-  }
-  .mes-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; font-weight:600; }
-  .mes-btn:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
-
-  .liq-block {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-lg); padding: 16px 20px; margin-top: 12px;
-  }
-  .liq-block-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:10px; }
-  .liq-row {
-    display:flex; justify-content:space-between; align-items:center;
-    padding: 7px 0; border-bottom: 1px solid var(--bg3); font-size:13px;
-  }
-  .liq-row:last-child { border-bottom:none; }
-  .liq-total {
-    background: var(--blue-bg); padding: 12px 14px;
-    border-radius: var(--radius); margin-top: 8px;
-    display:flex; justify-content:space-between; align-items:center;
-  }
-  .liq-neto {
-    background: var(--green-light); padding: 12px 14px;
-    border-radius: var(--radius); margin-top: 6px;
-    display:flex; justify-content:space-between; align-items:center;
-  }
-  .pill-viaje    { background: var(--blue-bg);   color: var(--blue);  }
-  .pill-gasto    { background: var(--red-bg);     color: var(--red);   }
-  .pill-anticipo { background: var(--amber-bg);   color: var(--amber); }
-  .pill-adelanto { background: #EDE9FE;            color: #5B21B6;      }
-
-  /* ── MÓDULO CAMIONES ────────────────────────────────────────── */
-  .camion-cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; margin-top:16px; }
-  .camion-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; cursor:pointer; transition:border-color .15s; }
-  .camion-card:hover { border-color:var(--blue); }
-  .camion-card-dom  { font-size:14px; font-weight:700; color:var(--text); font-family:var(--mono); }
-  .camion-card-chofer { font-size:12px; color:var(--text3); margin-top:3px; }
-  .camion-kpi { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:14px; }
-  .camion-kpi-item { text-align:center; padding:8px 4px; background:var(--bg2); border-radius:var(--radius); }
-  .camion-kpi-val { font-size:13px; font-weight:600; font-family:var(--mono); }
-  .camion-kpi-lbl { font-size:10px; color:var(--text3); margin-top:2px; }
-
-  .config-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px; }
-  .config-field { display:flex; flex-direction:column; gap:4px; }
-  .config-field label { font-size:11px; color:var(--text3); font-weight:500; }
-  .config-field input { padding:7px 10px; border:1px solid var(--border2); border-radius:var(--radius); font-size:13px; font-family:var(--mono); background:var(--surface); color:var(--text); }
-  .config-field input:focus { outline:none; border-color:var(--green); }
-  .config-section-title { font-size:12px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; margin:14px 0 8px; }
-
-  .costo-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--bg3); font-size:13px; }
-  .costo-row:last-child { border-bottom:none; }
-  .costo-cat  { font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; text-transform:uppercase; }
-  .cat-fijo   { background:#EDE9FE; color:#5B21B6; }
-  .cat-km     { background:var(--blue-bg); color:var(--blue); }
-  .cat-var    { background:var(--amber-bg); color:var(--amber); }
-  .cat-sueldo { background:var(--green-bg); color:var(--green); }
-  /* ── MÓDULO COMBUSTIBLE ─────────────────────────────────────── */
-  .comb-tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:16px; }
-  .comb-tab  { padding:8px 18px; border:none; background:none; font-size:13px; color:var(--text3); cursor:pointer; font-family:var(--sans); }
-  .comb-tab.active { font-weight:600; color:var(--blue); border-bottom:2px solid var(--blue); margin-bottom:-2px; }
-
-  .lote-pill-entry { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; background:var(--green-bg); color:var(--green); border-radius:99px; font-size:11px; font-weight:600; }
-  .saldo-bar { height:10px; background:var(--bg3); border-radius:99px; overflow:hidden; margin-top:6px; }
-  .saldo-bar-fill { height:100%; background:var(--green); border-radius:99px; transition:width .4s; }
-  .saldo-bar-fill.warn { background:var(--amber); }
-  .saldo-bar-fill.low  { background:var(--red); }
-
-  .retiro-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 16px; margin-bottom:10px; }
-  .retiro-card-top { display:flex; justify-content:space-between; align-items:flex-start; }
-  .retiro-act-badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px; text-transform:uppercase; }
-  .act-flete   { background:var(--blue-bg);  color:var(--blue);  }
-  .act-cosecha { background:#FEF3C7;          color:#92400E;      }
-  .act-otro    { background:var(--bg3);       color:var(--text3); }
-
-  .medidor-display { background:#111; border-radius:6px; padding:8px 12px; display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); }
-  .medidor-digits  { font-size:22px; font-weight:700; color:#00FF88; letter-spacing:3px; }
-  .medidor-label   { font-size:10px; color:#666; }
-
-  .foto-thumb { width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:transform .15s; }
-  .foto-thumb:hover { transform:scale(1.05); }
-  .foto-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:9999; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-  .foto-modal-img { max-width:90vw; max-height:85vh; border-radius:8px; object-fit:contain; }
-
-  /* ── LOGIN ──────────────────────────────────────────────────── */
-  #login-screen {
-    position: fixed; inset: 0;
-    background: var(--text);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 99999;
-    font-family: var(--sans);
-  }
-  .login-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 40px 36px;
-    width: 100%; max-width: 360px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-    text-align: center;
-  }
-  .login-icon {
-    width: 52px; height: 52px;
-    background: var(--green);
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 20px;
-  }
-  .login-icon svg { width: 28px; height: 28px; fill: white; }
-  .login-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-  .login-sub   { font-size: 13px; color: var(--text3); margin-bottom: 28px; }
-  .login-field {
-    width: 100%;
-    padding: 11px 14px;
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    font-family: var(--mono);
-    font-size: 15px;
-    color: var(--text);
-    background: white;
-    text-align: center;
-    letter-spacing: 3px;
-    margin-bottom: 12px;
-    transition: border-color 0.15s;
-  }
-  .login-field:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,106,79,0.12); }
-  .login-field.error { border-color: var(--red); background: var(--red-bg); animation: shake 0.35s; }
-  .login-btn {
-    width: 100%; padding: 11px;
-    background: var(--green); color: white;
-    border: none; border-radius: var(--radius);
-    font-family: var(--sans); font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: background 0.15s;
-    margin-bottom: 10px;
-  }
-  .login-btn:hover { background: #236040; }
-  .login-error {
-    font-size: 12px; color: var(--red);
-    background: var(--red-bg);
-    border-radius: var(--radius);
-    padding: 8px 12px;
-    margin-bottom: 10px;
-    display: none;
-  }
-  .login-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
-  @keyframes shake {
-    0%,100%{transform:translateX(0)}
-    25%{transform:translateX(-6px)}
-    75%{transform:translateX(6px)}
-  }
-
-  /* ── INGRESO MODOS ──────────────────────────────────────────────── */
-  .modo-tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:22px; }
-  .modo-tab {
-    padding:10px 24px; border:none; background:none;
-    font-size:13px; color:var(--text3); cursor:pointer;
-    font-family:var(--sans); font-weight:500; transition:all .15s;
-  }
-  .modo-tab.active { color:var(--green); border-bottom:2px solid var(--green); margin-bottom:-2px; font-weight:600; }
-  .modo-tab:hover:not(.active) { color:var(--text); background:var(--bg2); }
-
-  /* ── BÚSQUEDA BOLSÓN ────────────────────────────────────────────── */
-  .busq-tab { font-size:12px !important; padding:6px 14px !important; }
-  .busq-tab.active { background:var(--green) !important; color:#fff !important; border-color:var(--green) !important; }
-
-  /* ── FOTO PREVIEW GRID ──────────────────────────────────────────── */
-  .foto-preview-grid { display:flex; gap:8px; flex-wrap:wrap; }
-  .foto-item-wrap { position:relative; display:inline-block; }
-  .foto-item-del {
-    position:absolute; top:-5px; right:-5px;
-    width:18px; height:18px;
-    background:var(--red); color:#fff; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-size:11px; font-weight:700; cursor:pointer;
-    box-shadow:0 1px 4px rgba(0,0,0,.25);
-    line-height:1;
-  }
-  .foto-add-btn {
-    width:62px; height:62px;
-    border:2px dashed var(--border2); border-radius:6px;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer; color:var(--text3); font-size:24px;
-    transition:all .15s; flex-shrink:0;
-  }
-  .foto-add-btn:hover { border-color:var(--green); color:var(--green); background:var(--green-light); }
-
-  /* ── CARGAS MODAL ───────────────────────────────────────────────── */
-  .cargas-modal-overlay {
-    position:fixed; inset:0; background:rgba(0,0,0,.55);
-    z-index:9998; display:flex; align-items:center; justify-content:center;
-    padding:20px;
-  }
-  .cargas-modal {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius-lg); width:100%; max-width:660px;
-    max-height:82vh; display:flex; flex-direction:column;
-    box-shadow:0 20px 60px rgba(0,0,0,.3);
-  }
-  .cargas-modal-header {
-    padding:16px 20px; border-bottom:1px solid var(--border);
-    display:flex; align-items:center; justify-content:space-between;
-    flex-shrink:0;
-  }
-  .cargas-modal-body { padding:16px 20px; overflow-y:auto; flex:1; }
-  .cargas-modal-close {
-    background:none; border:none; font-size:22px; cursor:pointer;
-    color:var(--text3); line-height:1; padding:0 4px;
-  }
-  .cargas-modal-close:hover { color:var(--text); }
-
-  .carga-item {
-    background:var(--bg2); border:1px solid var(--border);
-    border-radius:var(--radius); padding:12px 14px; margin-bottom:10px;
-  }
-  .carga-item:last-child { margin-bottom:0; }
-  .carga-item-top { display:flex; justify-content:space-between; align-items:flex-start; }
-  .carga-item-kg { font-size:16px; font-weight:700; font-family:var(--mono); color:var(--green); }
-  .carga-item-fecha { font-size:12px; color:var(--text3); margin-top:2px; }
-  .carga-item-obs { font-size:12px; color:var(--text2); margin-top:6px; font-style:italic; }
-  .carga-item-fotos { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
-  .carga-item-num { font-size:11px; font-weight:600; color:var(--text3);
-    text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
-
-  /* ── BOTONES DE ACCIÓN EN TABLAS ────────────────────────────────── */
-  .accion-btn {
-    padding:3px 8px; border-radius:var(--radius);
-    font-size:11px; font-family:var(--sans); cursor:pointer;
-    border:1px solid; transition:all .12s; white-space:nowrap;
-  }
-  .accion-edit { color:var(--blue); border-color:#BFDBFE; background:#EFF6FF; }
-  .accion-edit:hover { background:var(--blue); color:#fff; border-color:var(--blue); }
-  .accion-del  { color:var(--red);  border-color:#FECACA; background:#FFF5F5; }
-  .accion-del:hover  { background:var(--red);  color:#fff; border-color:var(--red);  }
-
-  /* ── CONFIRM INLINE ─────────────────────────────────────────────── */
-  .confirm-inline {
-    display:inline-flex; gap:4px; align-items:center;
-    background:var(--red-bg); border:1px solid #FECACA;
-    border-radius:var(--radius); padding:3px 6px;
-  }
-  .confirm-inline span { font-size:11px; color:var(--red); font-weight:500; }
-  .confirm-inline button {
-    font-size:10px; padding:2px 7px; border-radius:3px;
-    border:none; cursor:pointer; font-family:var(--sans); font-weight:600;
-  }
-  .confirm-si  { background:var(--red); color:#fff; }
-  .confirm-no  { background:var(--bg3); color:var(--text2); }
-
-  /* ── MODAL EDITAR EGRESO ────────────────────────────────────────── */
-  .edit-modal-overlay {
-    position:fixed; inset:0; background:rgba(0,0,0,.55);
-    z-index:9997; display:flex; align-items:center; justify-content:center;
-    padding:20px;
-  }
-  .edit-modal {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius-lg); width:100%; max-width:680px;
-    max-height:88vh; display:flex; flex-direction:column;
-    box-shadow:0 20px 60px rgba(0,0,0,.3);
-  }
-  .edit-modal-header {
-    padding:16px 20px; border-bottom:1px solid var(--border);
-    display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
-  }
-  .edit-modal-body { padding:20px; overflow-y:auto; flex:1; }
-  .edit-modal-footer {
-    padding:14px 20px; border-top:1px solid var(--border);
-    display:flex; gap:10px; justify-content:flex-end; flex-shrink:0;
-  }
-  .edit-modal-close {
-    background:none; border:none; font-size:22px; cursor:pointer;
-    color:var(--text3); line-height:1; padding:0 4px;
-  }
-  .edit-modal-close:hover { color:var(--text); }
-  .edit-section-title {
-    font-size:11px; font-weight:600; color:var(--text3);
-    text-transform:uppercase; letter-spacing:.06em;
-    margin:18px 0 10px; padding-bottom:6px;
-    border-bottom:1px solid var(--border);
-  }
-  .edit-section-title:first-child { margin-top:0; }
+/* ── ZOOM BAJO / PANTALLA MUY ANCHA (>1600px efectivos) ────────────── */
+@media(min-width:1600px){
+  .main{padding:32px 48px}
+  .acopio-cards-grid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+  .chofer-cards-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .camion-cards-grid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+  .form-grid{grid-template-columns:1fr 1fr}
+  .form-grid-3{grid-template-columns:1fr 1fr 1fr}
+}
 </style>
 </head>
 <body>
@@ -851,9 +508,17 @@
 </div>
 <!-- ════════════════════════════════════════════════════════════════ -->
 
+<!-- BOTÓN HAMBURGUESA (visible en pantallas pequeñas) -->
+<button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menú">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- OVERLAY oscuro detrás del sidebar -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="layout">
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
       <div class="brand-icon">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
@@ -1013,14 +678,10 @@
               </div>
               <div class="form-group">
                 <label>Campo</label>
-                <select id="ing-campo" onchange="actualizarLotes('ing')"><option value="">— Seleccionar —</option></select>
+                <select id="ing-campo" onchange="actualizarLotes('ing');renderLoteRows('ing')"><option value="">— Seleccionar —</option></select>
               </div>
             </div>
             <div class="form-grid">
-              <div class="form-group">
-                <label>Lote</label>
-                <select id="ing-lote"><option value="">— Seleccionar —</option></select>
-              </div>
               <div class="form-group">
                 <label>Tipo de grano</label>
                 <select id="ing-grano">
@@ -1029,17 +690,23 @@
                   <option value="Trigo">Trigo</option><option value="Sorgo">Sorgo</option>
                 </select>
               </div>
-            </div>
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Kilos (primera carga)</label>
-                <input type="number" id="ing-kilos" placeholder="Ej: 28500" min="0">
-              </div>
               <div class="form-group">
                 <label>Cosecha</label>
                 <input type="text" id="ing-cosecha" placeholder="Ej: 25/26" maxlength="10">
               </div>
             </div>
+
+            <!-- MULTI-LOTE BUILDER -->
+            <div class="form-group" style="margin-bottom:14px">
+              <label>Lotes y kilos <span style="font-size:11px;color:var(--text3);font-weight:400">— podés agregar uno o más lotes</span></label>
+              <div id="ing-lotes-rows" style="margin-top:6px"></div>
+              <button class="add-lote-btn" onclick="agregarLoteRow('ing')">+ Agregar lote</button>
+              <div class="lote-total-bar" id="ing-total-bar" style="display:none">
+                <span class="lote-total-label">Total de kilos</span>
+                <span class="lote-total-val" id="ing-kilos-total">0 kg</span>
+              </div>
+            </div>
+
             <div class="form-grid">
               <div class="form-group">
                 <label>Fecha</label>
@@ -1128,19 +795,27 @@
                 <div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Bolsón seleccionado</div>
                 <div id="carga-bolson-info" style="font-size:13px;color:var(--text);line-height:1.5"></div>
               </div>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label>Kilos a agregar</label>
-                  <input type="number" id="carga-kilos" placeholder="Ej: 15000" min="1">
+
+              <!-- MULTI-LOTE BUILDER carga -->
+              <div class="form-group" style="margin-bottom:14px">
+                <label>Lotes y kilos <span style="font-size:11px;color:var(--text3);font-weight:400">— podés agregar uno o más lotes</span></label>
+                <div id="carga-lotes-rows" style="margin-top:6px"></div>
+                <button class="add-lote-btn" onclick="agregarLoteRow('carga')">+ Agregar lote</button>
+                <div class="lote-total-bar" id="carga-total-bar" style="display:none">
+                  <span class="lote-total-label">Total de kilos</span>
+                  <span class="lote-total-val" id="carga-kilos-total">0 kg</span>
                 </div>
+              </div>
+
+              <div class="form-grid">
                 <div class="form-group">
                   <label>Fecha de descarga</label>
                   <input type="date" id="carga-fecha">
                 </div>
-              </div>
-              <div class="form-group" style="margin-bottom:14px">
-                <label>Observaciones (opcional)</label>
-                <input type="text" id="carga-obs" placeholder="Ej: Descarga tolva norte, tarde">
+                <div class="form-group">
+                  <label>Observaciones (opcional)</label>
+                  <input type="text" id="carga-obs" placeholder="Ej: Descarga tolva norte, tarde">
+                </div>
               </div>
               <div class="form-group" style="margin-bottom:16px">
                 <label>Fotos del comprobante (opcional)</label>
@@ -1202,7 +877,7 @@
               <div class="step-num" id="step2-num">2</div>
               <div class="step-content">
                 <div class="step-title">Asignar origen del grano</div>
-                <div class="step-desc">Seleccioná el inquilino, campo y lote de donde sale el grano</div>
+                <div class="step-desc">Filtrá por campo y lote, luego agregá uno o más bolsones con sus kilos</div>
                 <div class="form-grid">
                   <div class="form-group">
                     <label>Inquilino</label>
@@ -1231,9 +906,21 @@
                     </select>
                   </div>
                 </div>
+
+                <!-- LISTA DE BOLSONES DISPONIBLES -->
                 <div id="bolson-wrap" style="display:none">
-                  <div class="section-label">Seleccioná el bolsón de origen</div>
+                  <div class="section-label" style="margin-bottom:8px">Bolsones disponibles — hacé clic en <strong>Agregar</strong> para incluirlos en esta CPE</div>
                   <div class="bolson-grid" id="bolson-lista"></div>
+                </div>
+
+                <!-- BOLSONES SELECCIONADOS -->
+                <div id="egr-bolsones-sel-wrap" style="display:none;margin-top:14px">
+                  <div class="section-label" style="margin-bottom:8px">Bolsones en esta CPE</div>
+                  <div id="egr-bolsones-sel-list" class="bolson-sel-list"></div>
+                  <div class="egr-total-bar">
+                    <span class="egr-total-label">Total kg de la CPE</span>
+                    <span class="egr-total-val" id="egr-kilos-total-display">0 kg</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1251,7 +938,7 @@
                   <div class="form-group"><label>Fecha de descarga</label><input type="date" id="egr-fecha"></div>
                 </div>
                 <div class="form-grid">
-                  <div class="form-group"><label>Peso neto descarga (kg)</label><input type="number" id="egr-kilos" placeholder="Ej: 29460"></div>
+                  <div class="form-group"><label>Peso neto descarga (kg)</label><input type="number" id="egr-kilos" placeholder="Ej: 29460" readonly style="background:var(--bg2);color:var(--text3)" title="Se calcula automáticamente de los bolsones seleccionados"></div>
                   <div class="form-group"><label>Chofer</label><input type="text" id="egr-chofer" placeholder="Nombre del chofer"></div>
                 </div>
                 <div class="form-grid">
@@ -1830,6 +1517,13 @@ const _fotosReg = {
 };
 let _bolsonParaCarga = null; // id del bolsón seleccionado para carga parcial
 
+// Multi-lote builder state
+let _ingLotes   = [];  // [{lote, kilos}] para nuevo bolsón
+let _cargaLotes = [];  // [{lote, kilos}] para carga parcial
+
+// Multi-bolsón egreso state  [{id, kg}]
+let _egrBolsones = [];
+
 // ─── PDF.JS CONFIG ────────────────────────────────────────────────
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -2102,40 +1796,49 @@ function actualizarLotesYBolsones() {
 
 function actualizarBolsones() {
   const campo = document.getElementById('egr-campo').value;
-  const lote = document.getElementById('egr-lote').value;
+  const lote  = document.getElementById('egr-lote').value;
   const grano = document.getElementById('egr-grano').value;
-  bolsonSeleccionado = null;
-  if (!campo || !lote || !grano) { document.getElementById('bolson-wrap').style.display = 'none'; return; }
-  const disp = bolsones.filter(b => b.campo === campo && b.lote === parseInt(lote) && b.grano === grano && (b.ingresado - b.egresado) > 0);
-  document.getElementById('bolson-wrap').style.display = 'block';
-  if (!disp.length) {
-    document.getElementById('bolson-lista').innerHTML = '<div class="no-bolsones">Sin stock disponible para esta combinación</div>';
-    return;
-  }
-  document.getElementById('bolson-lista').innerHTML = disp.map(b => {
-    const s = b.ingresado - b.egresado;
-    const pct = Math.round((s / b.ingresado) * 100);
-    const tc = 'tag-' + b.grano.toLowerCase().replace('í','i').replace('ó','o');
-    return `<div class="bolson-card" id="bc-${b.id}" onclick="seleccionarBolson(${b.id})">
+  const wrap  = document.getElementById('bolson-wrap');
+  const lista = document.getElementById('bolson-lista');
+  if (!campo || !lote || !grano) { wrap.style.display='none'; return; }
+
+  // Compatibilidad: buscar bolsones donde b.lote sea el número, string, o "1 y 2" conteniendo el lote
+  const filtrados = bolsones.filter(b => {
+    if (b.campo !== campo || b.grano !== grano) return false;
+    if ((b.ingresado - b.egresado) <= 0) return false;
+    // b.lote puede ser int, string numérica, o "1 y 2"
+    const loteNum = parseInt(lote);
+    if (b.lotes) return b.lotes.some(l => l.lote === loteNum || String(l.lote) === String(lote));
+    return String(b.lote) === String(lote) || b.lote === loteNum;
+  });
+
+  if (!filtrados.length) { wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+
+  lista.innerHTML = filtrados.map(b => {
+    const s   = b.ingresado - b.egresado;
+    const pct = b.ingresado > 0 ? Math.round((s / b.ingresado) * 100) : 0;
+    const tc  = 'tag-' + b.grano.toLowerCase().replace('í','i').replace('ó','o');
+    const loteLabel = _lotesLabel(b.lotes) || String(b.lote);
+    const yaSel = !!_egrBolsones.find(x => x.id === b.id);
+    return `<div class="bolson-card ${yaSel ? 'selected' : ''}" id="bc-${b.id}">
       <div class="bolson-left">
-        <div class="bolson-title">Bolsón #${b.id} — Lote ${b.lote}</div>
-        <div class="bolson-meta">${b.obs || 'Sin observaciones'} · Ingresado: ${b.ingresado.toLocaleString('es-AR')} kg</div>
+        <div class="bolson-title">Bolsón #${b.id} — ${b.campo} · Lotes ${loteLabel}</div>
+        <div class="bolson-meta">${b.inquilino}${b.cosecha?' · Cosecha '+b.cosecha:''} · ${b.obs||'Sin obs.'}</div>
         <div class="progbar" style="margin-top:6px"><div class="progbar-fill" style="width:${pct}%"></div></div>
       </div>
-      <div class="bolson-right">
+      <div class="bolson-right" style="align-items:flex-end">
         <div class="bolson-kg">${s.toLocaleString('es-AR')} kg</div>
-        <div class="bolson-pct">${pct}% disponible</div>
+        <div class="bolson-pct">${pct}% disp.</div>
         <div style="margin-top:4px"><span class="tag ${tc}">${b.grano}</span></div>
+        <button class="bolson-add-btn${yaSel ? ' ya-sel' : ''}"
+          onclick="${yaSel ? '' : 'agregarBolsonEgreso(' + b.id + ')'}"
+          ${yaSel ? 'disabled' : ''}>
+          ${yaSel ? '✓ Agregado' : '+ Agregar'}
+        </button>
       </div>
     </div>`;
   }).join('');
-}
-
-function seleccionarBolson(id) {
-  bolsonSeleccionado = id;
-  document.querySelectorAll('.bolson-card').forEach(c => c.classList.remove('selected'));
-  const el = document.getElementById('bc-' + id);
-  if (el) el.classList.add('selected');
 }
 
 function llenarFormulario(d) {
@@ -2148,6 +1851,10 @@ function llenarFormulario(d) {
       setTimeout(() => el.classList.remove('ia-filled'), 4000);
     }
   };
+  // Reset bolsones seleccionados al cargar nueva CPE
+  _egrBolsones = [];
+  renderEgrBolsonesSeleccionados();
+
   set('egr-nro', d.nro_cpe);
   set('egr-fecha', d.fecha_descarga);
   set('egr-kilos', d.peso_neto_descarga || d.peso_neto_carga);
@@ -2187,48 +1894,189 @@ function buildExtractedHTML(d) {
     <div class="extracted-row"><span class="ext-key">Procedencia</span><span class="ext-val">${d.procedencia||'—'}</span></div>`;
 }
 
+// ─── MULTI-LOTE BUILDER ──────────────────────────────────────────
+function _getLotesArray(prefix) { return prefix === 'ing' ? _ingLotes : _cargaLotes; }
+
+function _lotesOpciones(campo) {
+  if (!campo || !CAMPOS[campo]) return '<option value="">— Seleccionar lote —</option>';
+  return '<option value="">— Lote —</option>' +
+    CAMPOS[campo].lotes.map(l => `<option value="${l}">Lote ${l}</option>`).join('');
+}
+
+function agregarLoteRow(prefix) {
+  const arr = _getLotesArray(prefix);
+  arr.push({ lote: '', kilos: 0 });
+  renderLoteRows(prefix);
+}
+
+function eliminarLoteRow(prefix, idx) {
+  const arr = _getLotesArray(prefix);
+  arr.splice(idx, 1);
+  renderLoteRows(prefix);
+}
+
+function actualizarLoteRow(prefix, idx, campo, kilos) {
+  const arr = _getLotesArray(prefix);
+  if (!arr[idx]) return;
+  if (campo !== undefined) arr[idx].lote = parseInt(campo) || campo;
+  if (kilos !== undefined) arr[idx].kilos = parseFloat(kilos) || 0;
+  recalcularTotalLotes(prefix);
+}
+
+function renderLoteRows(prefix) {
+  const arr = _getLotesArray(prefix);
+  const campo = prefix === 'ing'
+    ? document.getElementById('ing-campo').value
+    : (_bolsonParaCarga ? (bolsones.find(x => x.id === _bolsonParaCarga)||{}).campo : '');
+  const cont = document.getElementById(prefix + '-lotes-rows');
+  if (!cont) return;
+
+  if (!arr.length) { cont.innerHTML = ''; recalcularTotalLotes(prefix); return; }
+
+  cont.innerHTML = arr.map((row, i) => `
+    <div class="lote-row" id="${prefix}-lote-row-${i}">
+      <select style="flex:0 0 110px" onchange="actualizarLoteRow('${prefix}',${i},this.value,undefined)">
+        ${_lotesOpciones(campo).replace(
+          `value="${row.lote}"`,
+          `value="${row.lote}" selected`
+        )}
+      </select>
+      <input type="number" placeholder="Kilos" min="1" value="${row.kilos||''}"
+        style="flex:1"
+        oninput="actualizarLoteRow('${prefix}',${i},undefined,this.value)">
+      <div class="lote-row-del" onclick="eliminarLoteRow('${prefix}',${i})" title="Quitar lote">×</div>
+    </div>`
+  ).join('');
+  recalcularTotalLotes(prefix);
+}
+
+function recalcularTotalLotes(prefix) {
+  const arr = _getLotesArray(prefix);
+  const total = arr.reduce((s, r) => s + (r.kilos || 0), 0);
+  const bar   = document.getElementById(prefix + '-total-bar');
+  const val   = document.getElementById(prefix + '-kilos-total');
+  if (bar) bar.style.display = arr.length ? 'flex' : 'none';
+  if (val) val.textContent = total.toLocaleString('es-AR') + ' kg';
+  return total;
+}
+
+function _lotesLabel(lotes) {
+  if (!lotes || !lotes.length) return '—';
+  const nums = lotes.map(l => l.lote);
+  if (nums.length === 1) return String(nums[0]);
+  const last = nums.pop();
+  return nums.join(', ') + ' y ' + last;
+}
+
+// ─── MULTI-BOLSÓN EGRESO ─────────────────────────────────────────
+function agregarBolsonEgreso(bolsonId) {
+  if (_egrBolsones.find(x => x.id === bolsonId)) return; // ya está
+  _egrBolsones.push({ id: bolsonId, kg: 0 });
+  renderEgrBolsonesSeleccionados();
+  actualizarBolsones(); // re-render grid para marcar como ya seleccionado
+}
+
+function eliminarBolsonEgreso(bolsonId) {
+  _egrBolsones = _egrBolsones.filter(x => x.id !== bolsonId);
+  renderEgrBolsonesSeleccionados();
+  actualizarBolsones();
+}
+
+function actualizarKgBolsonEgreso(bolsonId, kg) {
+  const item = _egrBolsones.find(x => x.id === bolsonId);
+  if (item) item.kg = parseFloat(kg) || 0;
+  recalcularTotalEgr();
+}
+
+function recalcularTotalEgr() {
+  const total = _egrBolsones.reduce((s, x) => s + (x.kg || 0), 0);
+  const disp  = document.getElementById('egr-kilos-total-display');
+  const inp   = document.getElementById('egr-kilos');
+  if (disp) disp.textContent = total.toLocaleString('es-AR') + ' kg';
+  if (inp)  inp.value = total || '';
+  return total;
+}
+
+function renderEgrBolsonesSeleccionados() {
+  const wrap = document.getElementById('egr-bolsones-sel-wrap');
+  const list = document.getElementById('egr-bolsones-sel-list');
+  if (!wrap || !list) return;
+
+  if (!_egrBolsones.length) { wrap.style.display = 'none'; recalcularTotalEgr(); return; }
+  wrap.style.display = 'block';
+
+  list.innerHTML = _egrBolsones.map(item => {
+    const b = bolsones.find(x => x.id === item.id);
+    if (!b) return '';
+    const stock = b.ingresado - b.egresado;
+    const tc = 'tag-' + b.grano.toLowerCase().replace('í','i').replace('ó','o');
+    return `<div class="bolson-sel-item">
+      <div class="bolson-sel-info">
+        <div class="bolson-sel-id">Bolsón #${b.id} <span class="tag ${tc}" style="font-size:10px">${b.grano}</span></div>
+        <div class="bolson-sel-meta">${b.campo} · Lote ${_lotesLabel(b.lotes)||b.lote} · disp: ${stock.toLocaleString('es-AR')} kg</div>
+      </div>
+      <input type="number" class="bolson-sel-kg" placeholder="Kilos" min="1" max="${stock}"
+        value="${item.kg||''}"
+        oninput="actualizarKgBolsonEgreso(${b.id},this.value)"
+        style="width:110px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:var(--mono)">
+      <div class="bolson-sel-del" onclick="eliminarBolsonEgreso(${b.id})" title="Quitar">×</div>
+    </div>`;
+  }).join('');
+  recalcularTotalEgr();
+}
+
 // ─── OPERACIONES ─────────────────────────────────────────────────
 function registrarIngreso() {
   const inquilino = document.getElementById('ing-inquilino').value;
-  const campo = document.getElementById('ing-campo').value;
-  const lote = document.getElementById('ing-lote').value;
-  const grano = document.getElementById('ing-grano').value;
-  const kilos = parseFloat(document.getElementById('ing-kilos').value);
-  const cosecha = document.getElementById('ing-cosecha').value.trim();
-  const obs = document.getElementById('ing-obs').value.trim();
-  const fechaEl = document.getElementById('ing-fecha');
-  const fecha = fechaEl.value || new Date().toISOString().split('T')[0];
-  const alertEl = document.getElementById('ing-alert');
+  const campo     = document.getElementById('ing-campo').value;
+  const grano     = document.getElementById('ing-grano').value;
+  const cosecha   = document.getElementById('ing-cosecha').value.trim();
+  const obs       = document.getElementById('ing-obs').value.trim();
+  const fecha     = document.getElementById('ing-fecha').value || new Date().toISOString().split('T')[0];
+  const alertEl   = document.getElementById('ing-alert');
 
-  if (!inquilino || !campo || !lote || !grano || !kilos || kilos <= 0) {
-    alertEl.innerHTML = '<div class="alert alert-danger">Completá todos los campos requeridos.</div>'; return;
+  if (!inquilino || !campo || !grano) {
+    alertEl.innerHTML = '<div class="alert alert-danger">Completá inquilino, campo y grano.</div>'; return;
   }
+  if (!_ingLotes.length) {
+    alertEl.innerHTML = '<div class="alert alert-danger">Agregá al menos un lote con kilos.</div>'; return;
+  }
+  const lotesValidos = _ingLotes.filter(l => l.lote && l.kilos > 0);
+  if (!lotesValidos.length) {
+    alertEl.innerHTML = '<div class="alert alert-danger">Completá lote y kilos en cada fila.</div>'; return;
+  }
+  const totalKilos = lotesValidos.reduce((s, l) => s + l.kilos, 0);
 
-  // Primera carga parcial
-  const primeraCarga = { fecha, kilos, obs, fotos: [..._fotosReg._ingFotos] };
+  // Lote de display: "1, 2 y 3"
+  const loteDisplay = _lotesLabel(lotesValidos);
+  // Primer lote numérico para compatibilidad
+  const loteRef = lotesValidos[0].lote;
 
+  const primeraCarga = { fecha, kilos: totalKilos, obs, lotes: [...lotesValidos], fotos: [..._fotosReg._ingFotos] };
   const b = {
-    id: nextBolson++, inquilino, campo, lote: parseInt(lote), grano,
-    ingresado: kilos, egresado: 0, obs, cosecha, fecha,
+    id: nextBolson++, inquilino, campo,
+    lote: loteDisplay,       // display "1 y 2"
+    lotes: [...lotesValidos], // detalle [{lote,kilos}]
+    grano, ingresado: totalKilos, egresado: 0, obs, cosecha, fecha,
     cargas: [primeraCarga]
   };
   bolsones.push(b);
   movimientos.push({
-    movId: nextMovId++,
-    fecha, tipo: 'ingreso', inquilino, campo, lote: parseInt(lote),
-    grano, kg: kilos, ref: obs || 'Ingreso manual', bolsonId: b.id
+    movId: nextMovId++, fecha, tipo: 'ingreso', inquilino, campo,
+    lote: loteDisplay, grano, kg: totalKilos,
+    ref: obs || `Ingreso · Lotes ${loteDisplay}`, bolsonId: b.id
   });
 
   guardarEstado();
-  alertEl.innerHTML = `<div class="alert alert-success">✅ Bolsón #${b.id} creado: ${kilos.toLocaleString('es-AR')} kg de ${grano} — ${campo} Lote ${lote} (${inquilino})${cosecha ? ' · Cosecha ' + cosecha : ''}</div>`;
+  alertEl.innerHTML = `<div class="alert alert-success">✅ Bolsón #${b.id} creado: ${totalKilos.toLocaleString('es-AR')} kg de ${grano} — ${campo} Lotes ${loteDisplay} (${inquilino})${cosecha ? ' · Cosecha ' + cosecha : ''}</div>`;
 
-  // Reset form
   ['ing-inquilino','ing-campo','ing-grano','ing-obs','ing-cosecha'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('ing-lote').innerHTML = '<option value="">— Seleccionar —</option>';
-  document.getElementById('ing-kilos').value = '';
   document.getElementById('ing-fecha').value = '';
   document.getElementById('ing-fotos-preview').innerHTML = '';
+  document.getElementById('ing-lotes-rows').innerHTML = '';
+  document.getElementById('ing-total-bar').style.display = 'none';
   _fotosReg._ingFotos = [];
+  _ingLotes = [];
   renderDashboard(); renderBolsones();
 }
 
@@ -2319,11 +2167,15 @@ function seleccionarBolsonParaCarga(id) {
     `<strong>Bolsón #${b.id}</strong> · <strong>${b.grano}</strong> · ${b.campo} Lote ${b.lote} · ${b.inquilino}` +
     `<br><span style="font-size:12px;color:var(--text3)">Stock actual: <strong style="color:var(--green)">${s.toLocaleString('es-AR')} kg</strong> · Cosecha: ${b.cosecha||'—'} · ${b.obs||''}</span>`;
   document.getElementById('carga-fecha').value = new Date().toISOString().split('T')[0];
-  document.getElementById('carga-kilos').value = '';
   document.getElementById('carga-obs').value   = '';
   document.getElementById('carga-alert').innerHTML = '';
   document.getElementById('carga-fotos-preview').innerHTML = '';
+  document.getElementById('carga-lotes-rows').innerHTML = '';
+  document.getElementById('carga-total-bar').style.display = 'none';
   _fotosReg._cargaFotos = [];
+  _cargaLotes = [];
+  // Iniciar con una fila vacía
+  agregarLoteRow('carga');
   document.getElementById('carga-parcial-form').style.display = 'block';
   document.getElementById('carga-parcial-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -2382,36 +2234,42 @@ function agregarKilosExistente() {
   const b = bolsones.find(x => x.id === _bolsonParaCarga);
   if (!b) { document.getElementById('carga-alert').innerHTML = '<div class="alert alert-danger">Bolsón no encontrado.</div>'; return; }
 
-  const kilos = parseFloat(document.getElementById('carga-kilos').value);
-  const fecha = document.getElementById('carga-fecha').value;
-  const obs   = document.getElementById('carga-obs').value.trim();
+  const fecha   = document.getElementById('carga-fecha').value;
+  const obs     = document.getElementById('carga-obs').value.trim();
   const alertEl = document.getElementById('carga-alert');
 
-  if (!kilos || kilos <= 0) { alertEl.innerHTML = '<div class="alert alert-danger">Ingresá una cantidad de kilos válida.</div>'; return; }
-  if (!fecha)               { alertEl.innerHTML = '<div class="alert alert-danger">Seleccioná la fecha de descarga.</div>'; return; }
+  if (!fecha) { alertEl.innerHTML = '<div class="alert alert-danger">Seleccioná la fecha de descarga.</div>'; return; }
+  if (!_cargaLotes.length) { alertEl.innerHTML = '<div class="alert alert-danger">Agregá al menos un lote con kilos.</div>'; return; }
+  const lotesValidos = _cargaLotes.filter(l => l.lote && l.kilos > 0);
+  if (!lotesValidos.length) { alertEl.innerHTML = '<div class="alert alert-danger">Completá lote y kilos en cada fila.</div>'; return; }
 
-  // Agregar carga al array de cargas del bolsón
+  const kilos = lotesValidos.reduce((s, l) => s + l.kilos, 0);
+  const loteDisplay = _lotesLabel(lotesValidos);
+
   if (!b.cargas) b.cargas = [];
-  b.cargas.push({ fecha, kilos, obs, fotos: [...(_fotosReg._cargaFotos || [])] });
+  b.cargas.push({ fecha, kilos, obs, lotes: [...lotesValidos], fotos: [...(_fotosReg._cargaFotos || [])] });
   b.ingresado += kilos;
+  // Actualizar lote display si hay nuevos lotes
+  if (b.lotes) {
+    lotesValidos.forEach(lv => { if (!b.lotes.find(x => x.lote === lv.lote)) b.lotes.push({lote: lv.lote, kilos: 0}); });
+    b.lote = _lotesLabel(b.lotes);
+  }
 
-  // Agregar al historial global de movimientos
   movimientos.push({
-    movId: nextMovId++,
-    fecha, tipo: 'ingreso', inquilino: b.inquilino, campo: b.campo,
-    lote: b.lote, grano: b.grano, kg: kilos,
-    ref: `Carga parcial · Bolsón #${b.id}${obs ? ' — ' + obs : ''}`,
+    movId: nextMovId++, fecha, tipo: 'ingreso', inquilino: b.inquilino, campo: b.campo,
+    lote: loteDisplay, grano: b.grano, kg: kilos,
+    ref: `Carga parcial · Bolsón #${b.id} · Lotes ${loteDisplay}${obs ? ' — ' + obs : ''}`,
     bolsonId: b.id
   });
 
   guardarEstado();
-  alertEl.innerHTML = `<div class="alert alert-success">✅ Se agregaron ${kilos.toLocaleString('es-AR')} kg al Bolsón #${b.id}. Total ingresado: ${b.ingresado.toLocaleString('es-AR')} kg</div>`;
+  alertEl.innerHTML = `<div class="alert alert-success">✅ Se agregaron ${kilos.toLocaleString('es-AR')} kg al Bolsón #${b.id} (Lotes ${loteDisplay}). Total: ${b.ingresado.toLocaleString('es-AR')} kg</div>`;
 
-  // Reset
-  _fotosReg._cargaFotos = []; _bolsonParaCarga = null;
+  _fotosReg._cargaFotos = []; _bolsonParaCarga = null; _cargaLotes = [];
   document.getElementById('carga-fotos-preview').innerHTML = '';
-  document.getElementById('carga-kilos').value = '';
   document.getElementById('carga-obs').value   = '';
+  document.getElementById('carga-lotes-rows').innerHTML = '';
+  document.getElementById('carga-total-bar').style.display = 'none';
   document.getElementById('carga-parcial-form').style.display = 'none';
   document.getElementById('busq-resultados').innerHTML = '';
   const idInp = document.getElementById('busq-id-input');
@@ -2497,11 +2355,20 @@ function eliminarMovimientoIdx(realIdx) {
 }
 
 function _revertirMovEnBolson(m) {
-  const b = bolsones.find(x => x.id === m.bolsonId);
-  if (!b) return;
   if (m.tipo === 'egreso') {
-    b.egresado = Math.max(0, b.egresado - m.kg);
+    // multi-bolsón
+    if (m.bolsonIds && m.bolsonIds.length) {
+      m.bolsonIds.forEach(item => {
+        const b = bolsones.find(x => x.id === item.id);
+        if (b) b.egresado = Math.max(0, b.egresado - item.kg);
+      });
+    } else {
+      const b = bolsones.find(x => x.id === m.bolsonId);
+      if (b) b.egresado = Math.max(0, b.egresado - m.kg);
+    }
   } else if (m.tipo === 'ingreso') {
+    const b = bolsones.find(x => x.id === m.bolsonId);
+    if (!b) return;
     b.ingresado = Math.max(0, b.ingresado - m.kg);
     if (b.cargas) {
       const ci = b.cargas.findIndex(c => c.fecha === m.fecha && c.kilos === m.kg);
@@ -2849,77 +2716,101 @@ function cerrarCargasModal(e) {
 }
 
 function registrarEgreso() {
-  const nro = document.getElementById('egr-nro').value;
-  const fecha = document.getElementById('egr-fecha').value;
-  const inquilino = document.getElementById('egr-inquilino').value;
-  const campo = document.getElementById('egr-campo').value;
-  const lote = document.getElementById('egr-lote').value;
-  const grano = document.getElementById('egr-grano').value;
-  const kilos = parseFloat(document.getElementById('egr-kilos').value);
-  const chofer = document.getElementById('egr-chofer').value;
+  const nro      = document.getElementById('egr-nro').value;
+  const fecha    = document.getElementById('egr-fecha').value;
+  const inquilino= document.getElementById('egr-inquilino').value;
+  const campo    = document.getElementById('egr-campo').value;
+  const lote     = document.getElementById('egr-lote').value;
+  const grano    = document.getElementById('egr-grano').value;
+  const chofer   = document.getElementById('egr-chofer').value;
   const dominios = document.getElementById('egr-dominios').value;
-  const destino = document.getElementById('egr-destino').value;
-  const alertEl = document.getElementById('egr-alert');
-  if (!inquilino || !campo || !lote || !grano || !kilos || kilos <= 0) {
-    alertEl.innerHTML = '<div class="alert alert-danger">Completá inquilino, campo, lote, grano y kilos.</div>'; return;
+  const destino  = document.getElementById('egr-destino').value;
+  const alertEl  = document.getElementById('egr-alert');
+
+  if (!inquilino || !campo || !grano) {
+    alertEl.innerHTML = '<div class="alert alert-danger">Completá inquilino, campo y grano.</div>'; return;
   }
-  if (!bolsonSeleccionado) {
-    alertEl.innerHTML = '<div class="alert alert-danger">Seleccioná un bolsón de origen.</div>'; return;
+  if (!_egrBolsones.length) {
+    alertEl.innerHTML = '<div class="alert alert-danger">Agregá al menos un bolsón de origen.</div>'; return;
   }
-  const b = bolsones.find(x => x.id === bolsonSeleccionado);
-  if (!b) { alertEl.innerHTML = '<div class="alert alert-danger">Bolsón no encontrado.</div>'; return; }
-  const stock = b.ingresado - b.egresado;
-  if (kilos > stock) {
-    alertEl.innerHTML = `<div class="alert alert-danger">Stock insuficiente en Bolsón #${b.id}. Disponible: ${stock.toLocaleString('es-AR')} kg.</div>`; return;
+  const bolsonesConKg = _egrBolsones.filter(x => x.kg > 0);
+  if (!bolsonesConKg.length) {
+    alertEl.innerHTML = '<div class="alert alert-danger">Ingresá los kilos para cada bolsón seleccionado.</div>'; return;
   }
-  b.egresado += kilos;
-  movimientos.push({
-    movId: nextMovId++,
-    fecha: fecha || new Date().toISOString().split('T')[0],
-    tipo: 'egreso', inquilino, campo, lote: parseInt(lote), grano, kg: kilos,
-    ref: `CPE ${nro||'s/n'} | Bolsón #${b.id} | ${dominios} → ${destino}`,
-    bolsonId: b.id,
-    nro_cpe: nro || '', chofer, dominios, destino
+
+  // Validar stock en cada bolsón
+  for (const item of bolsonesConKg) {
+    const b = bolsones.find(x => x.id === item.id);
+    if (!b) { alertEl.innerHTML = `<div class="alert alert-danger">Bolsón #${item.id} no encontrado.</div>`; return; }
+    const stock = b.ingresado - b.egresado;
+    if (item.kg > stock) {
+      alertEl.innerHTML = `<div class="alert alert-danger">Stock insuficiente en Bolsón #${b.id}. Disponible: ${stock.toLocaleString('es-AR')} kg, intentás egresar: ${item.kg.toLocaleString('es-AR')} kg.</div>`; return;
+    }
+  }
+
+  const totalKg   = bolsonesConKg.reduce((s, x) => s + x.kg, 0);
+  const bolsonIds = bolsonesConKg.map(x => x.id);
+  const bolsonRef = bolsonIds.length === 1
+    ? `Bolsón #${bolsonIds[0]}`
+    : 'Bolsones #' + bolsonIds.join(', #');
+
+  // Descontar stock de cada bolsón
+  bolsonesConKg.forEach(item => {
+    const b = bolsones.find(x => x.id === item.id);
+    b.egresado += item.kg;
   });
 
-  // Vincular automáticamente al acopio si la CPE tiene Rte. Comercial
+  const fechaFinal = fecha || new Date().toISOString().split('T')[0];
+  movimientos.push({
+    movId: nextMovId++,
+    fecha: fechaFinal, tipo: 'egreso',
+    inquilino, campo, lote: lote || grano, grano, kg: totalKg,
+    ref: `CPE ${nro||'s/n'} | ${bolsonRef} | ${dominios} → ${destino}`,
+    bolsonId: bolsonIds[0],       // primer bolsón para compatibilidad
+    bolsonIds: bolsonesConKg,     // detalle [{id, kg}]
+    nro_cpe: nro||'', chofer, dominios, destino
+  });
+
+  // Vincular al acopio
   if (ultimaCPE && ultimaCPE.rte_comercial) {
     const clave = obtenerOCrearAcopio(ultimaCPE.rte_comercial, ultimaCPE.rte_comercial_cuit || '');
     acopios[clave].movimientos.push({
-      tipo: 'entrega',
-      fecha: fecha || new Date().toISOString().split('T')[0],
-      nro_cpe: nro || ultimaCPE.nro_cpe || '',
-      grano, campania: ultimaCPE.campania || '',
-      kg: kilos,
-      dominios: dominios || ultimaCPE.dominios || '',
-      chofer: chofer || ultimaCPE.chofer || '',
-      campo, lote: parseInt(lote)
+      tipo:'entrega', fecha: fechaFinal,
+      nro_cpe: nro||ultimaCPE.nro_cpe||'',
+      grano, campania: ultimaCPE.campania||'',
+      kg: totalKg,
+      dominios: dominios||ultimaCPE.dominios||'',
+      chofer: chofer||ultimaCPE.chofer||'',
+      campo, lote: lote||''
     });
   }
 
-  // Vincular automáticamente al módulo de fletes si hay chofer y dominios
+  // Vincular al chofer
   if (ultimaCPE && (ultimaCPE.chofer || ultimaCPE.dominios)) {
-    const nomChofer = chofer || ultimaCPE.chofer || '';
-    const domChofer = dominios || ultimaCPE.dominios || '';
+    const nomChofer = chofer||ultimaCPE.chofer||'';
+    const domChofer = dominios||ultimaCPE.dominios||'';
     if (nomChofer || domChofer) {
       const claveC = obtenerOCrearChofer(nomChofer, domChofer);
       choferes[claveC].viajes.push({
-        fecha: fecha || new Date().toISOString().split('T')[0],
-        nro_cpe: nro || ultimaCPE.nro_cpe || '',
-        campo, lote: parseInt(lote),
-        grano, kg: kilos,
-        destino: destino || ultimaCPE.destino || '',
-        flete: 0  // se calcula con la tarifa del chofer
+        fecha: fechaFinal,
+        nro_cpe: nro||ultimaCPE.nro_cpe||'',
+        campo, lote: lote||'', grano, kg: totalKg,
+        destino: destino||ultimaCPE.destino||'',
+        flete: 0
       });
       recalcularViajesChofer(claveC);
     }
   }
 
   ultimaCPE = null;
+  _egrBolsones = [];
 
   guardarEstado();
-  alertEl.innerHTML = `<div class="alert alert-success">Egreso registrado: ${kilos.toLocaleString('es-AR')} kg de ${grano} del Bolsón #${b.id} — ${campo} Lote ${lote} (${inquilino})</div>`;
-  bolsonSeleccionado = null; actualizarBolsones();
+  alertEl.innerHTML = `<div class="alert alert-success">✅ Egreso registrado: ${totalKg.toLocaleString('es-AR')} kg de ${grano} — ${bolsonRef} · CPE ${nro||'s/n'}</div>`;
+  bolsonSeleccionado = null;
+  actualizarBolsones();
+  renderEgrBolsonesSeleccionados();
+  renderDashboard(); renderBolsones();
 }
 
 // ─── RENDERS ─────────────────────────────────────────────────────
@@ -2952,7 +2843,7 @@ function renderBolsones() {
       <td class="num" style="color:var(--text3)">#${b.id}</td>
       <td><span class="badge-campo">${b.campo}</span></td>
       <td><span class="badge-inq">${b.inquilino}</span></td>
-      <td class="num">${b.lote}</td>
+      <td class="num">${_lotesLabel(b.lotes) || b.lote}</td>
       <td><span class="tag ${tc}">${b.grano}</span></td>
       <td class="num" style="color:var(--text3)">${b.cosecha||'—'}</td>
       <td class="num">${b.ingresado.toLocaleString('es-AR')}</td>
@@ -5074,6 +4965,42 @@ renderEstructura();
   </div>
 </div>
 <!-- ════════════════════════════════════════════════════════════════ -->
+
+<script>
+// ── SIDEBAR RESPONSIVE ──────────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('sidebar-overlay');
+  const toggle   = document.getElementById('sidebar-toggle');
+  const isOpen   = sidebar.classList.contains('open');
+  if (isOpen) {
+    closeSidebar();
+  } else {
+    sidebar.classList.add('open');
+    overlay.classList.add('visible');
+    toggle.classList.add('open');
+  }
+}
+
+function closeSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const toggle  = document.getElementById('sidebar-toggle');
+  sidebar.classList.remove('open');
+  overlay.classList.remove('visible');
+  toggle.classList.remove('open');
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    if (window.innerWidth <= 900) closeSidebar();
+  });
+});
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 900) closeSidebar();
+});
+</script>
 
 </body>
 </html>
