@@ -17,13 +17,13 @@
 
   // ▼▼▼ CREDENCIALES DEL PROYECTO — NO MODIFICAR ▼▼▼
   const firebaseConfig = {
-      apiKey: "AIzaSyCaXNoQuJZskL4wvCji98njGXQsqmuUQ6o",
+  apiKey: "AIzaSyCaXNoQuJZskL4wvCji98njGXQsqmuUQ6o",
   authDomain: "stockgranos-8de0f.firebaseapp.com",
   databaseURL: "https://stockgranos-8de0f-default-rtdb.firebaseio.com",
   projectId: "stockgranos-8de0f",
   storageBucket: "stockgranos-8de0f.firebasestorage.app",
   messagingSenderId: "718959653233",
-  appId: "1:718959653233:web:9bc9e555a38abdc309c6d0"
+  appId: "1:718959653233:web:9bc9e555a38abdc309c6d0""
   };
   // ▲▲▲ FIN CREDENCIALES ▲▲▲
 
@@ -707,12 +707,6 @@ tr:hover td{background:rgba(0,0,0,0.016)}
                 </select>
               </div>
               <div class="form-group">
-                <label>Campo</label>
-                <select id="ing-campo" onchange="actualizarLotes('ing');renderLoteRows('ing')"><option value="">— Seleccionar —</option></select>
-              </div>
-            </div>
-            <div class="form-grid">
-              <div class="form-group">
                 <label>Tipo de grano</label>
                 <select id="ing-grano">
                   <option value="">— Seleccionar —</option>
@@ -720,15 +714,21 @@ tr:hover td{background:rgba(0,0,0,0.016)}
                   <option value="Trigo">Trigo</option><option value="Sorgo">Sorgo</option>
                 </select>
               </div>
+            </div>
+            <div class="form-grid">
               <div class="form-group">
                 <label>Cosecha</label>
                 <input type="text" id="ing-cosecha" placeholder="Ej: 25/26" maxlength="10">
               </div>
+              <div class="form-group">
+                <label>Fecha</label>
+                <input type="date" id="ing-fecha">
+              </div>
             </div>
 
-            <!-- MULTI-LOTE BUILDER -->
+            <!-- MULTI-LOTE BUILDER (con campo propio por fila) -->
             <div class="form-group" style="margin-bottom:14px">
-              <label>Lotes y kilos <span style="font-size:11px;color:var(--text3);font-weight:400">— podés agregar uno o más lotes</span></label>
+              <label>Campos, lotes y kilos <span style="font-size:11px;color:var(--text3);font-weight:400">— cada fila puede ser de un campo distinto</span></label>
               <div id="ing-lotes-rows" style="margin-top:6px"></div>
               <button class="add-lote-btn" onclick="agregarLoteRow('ing')">+ Agregar lote</button>
               <div class="lote-total-bar" id="ing-total-bar" style="display:none">
@@ -737,15 +737,9 @@ tr:hover td{background:rgba(0,0,0,0.016)}
               </div>
             </div>
 
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Fecha</label>
-                <input type="date" id="ing-fecha">
-              </div>
-              <div class="form-group">
-                <label>Observaciones (opcional)</label>
-                <input type="text" id="ing-obs" placeholder="Ej: Cosecha lote norte">
-              </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label>Observaciones (opcional)</label>
+              <input type="text" id="ing-obs" placeholder="Ej: Cosecha lote norte">
             </div>
             <div class="form-group" style="margin-bottom:16px">
               <label>Fotos del comprobante (opcional)</label>
@@ -907,44 +901,20 @@ tr:hover td{background:rgba(0,0,0,0.016)}
               <div class="step-num" id="step2-num">2</div>
               <div class="step-content">
                 <div class="step-title">Asignar origen del grano</div>
-                <div class="step-desc">Filtrá por campo y lote, luego agregá uno o más bolsones con sus kilos</div>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label>Inquilino</label>
-                    <select id="egr-inquilino" onchange="filtrarCampos('egr')">
-                      <option value="">— Seleccionar —</option>
-                      <option value="JAVIER">JAVIER</option>
-                      <option value="JAM&JAM">JAM&JAM</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label>Campo</label>
-                    <select id="egr-campo" onchange="actualizarLotesYBolsones()"><option value="">— Seleccionar —</option></select>
-                  </div>
-                </div>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label>Lote</label>
-                    <select id="egr-lote" onchange="actualizarBolsones()"><option value="">— Seleccionar —</option></select>
-                  </div>
-                  <div class="form-group">
-                    <label>Grano</label>
-                    <select id="egr-grano" onchange="actualizarBolsones()">
-                      <option value="">— Seleccionar —</option>
-                      <option value="Soja">Soja</option><option value="Maíz">Maíz</option>
-                      <option value="Trigo">Trigo</option><option value="Sorgo">Sorgo</option>
-                    </select>
-                  </div>
-                </div>
+                <div class="step-desc">Buscá los bolsones por N° y agregá los kilos que corresponden a cada uno</div>
 
-                <!-- LISTA DE BOLSONES DISPONIBLES -->
-                <div id="bolson-wrap" style="display:none">
-                  <div class="section-label" style="margin-bottom:8px">Bolsones disponibles — hacé clic en <strong>Agregar</strong> para incluirlos en esta CPE</div>
-                  <div class="bolson-grid" id="bolson-lista"></div>
+                <!-- BÚSQUEDA POR N° BOLSÓN -->
+                <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:14px">
+                  <div class="form-group" style="max-width:200px;margin-bottom:0">
+                    <label>N° de bolsón</label>
+                    <input type="number" id="egr-busq-id" placeholder="Ej: 3" min="1"
+                      oninput="buscarBolsonParaEgreso(this.value)">
+                  </div>
+                  <div id="egr-busq-resultado" style="margin-top:10px"></div>
                 </div>
 
                 <!-- BOLSONES SELECCIONADOS -->
-                <div id="egr-bolsones-sel-wrap" style="display:none;margin-top:14px">
+                <div id="egr-bolsones-sel-wrap" style="display:none;margin-top:4px">
                   <div class="section-label" style="margin-bottom:8px">Bolsones en esta CPE</div>
                   <div id="egr-bolsones-sel-list" class="bolson-sel-list"></div>
                   <div class="egr-total-bar">
@@ -1884,6 +1854,10 @@ function llenarFormulario(d) {
   // Reset bolsones seleccionados al cargar nueva CPE
   _egrBolsones = [];
   renderEgrBolsonesSeleccionados();
+  const busqId = document.getElementById('egr-busq-id');
+  if (busqId) { busqId.value = ''; }
+  const busqRes = document.getElementById('egr-busq-resultado');
+  if (busqRes) busqRes.innerHTML = '';
 
   set('egr-nro', d.nro_cpe);
   set('egr-fecha', d.fecha_descarga);
@@ -1924,92 +1898,180 @@ function buildExtractedHTML(d) {
     <div class="extracted-row"><span class="ext-key">Procedencia</span><span class="ext-val">${d.procedencia||'—'}</span></div>`;
 }
 
-// ─── MULTI-LOTE BUILDER ──────────────────────────────────────────
+// ─── MULTI-LOTE BUILDER (campo + lote por fila) ──────────────────
 function _getLotesArray(prefix) { return prefix === 'ing' ? _ingLotes : _cargaLotes; }
 
-function _lotesOpciones(campo) {
-  if (!campo || !CAMPOS[campo]) return '<option value="">— Seleccionar lote —</option>';
-  return '<option value="">— Lote —</option>' +
-    CAMPOS[campo].lotes.map(l => `<option value="${l}">Lote ${l}</option>`).join('');
+function _camposOpciones(selectedCampo) {
+  const opts = Object.keys(CAMPOS).map(c =>
+    `<option value="${c}"${c === selectedCampo ? ' selected' : ''}>${c}</option>`
+  ).join('');
+  return `<option value="">— Campo —</option>${opts}`;
+}
+
+function _lotesOpcionesDe(campo, selectedLote) {
+  if (!campo || !CAMPOS[campo]) return `<option value="">— Lote —</option>`;
+  return `<option value="">— Lote —</option>` +
+    CAMPOS[campo].lotes.map(l =>
+      `<option value="${l}"${String(l) === String(selectedLote) ? ' selected' : ''}>Lote ${l}</option>`
+    ).join('');
 }
 
 function agregarLoteRow(prefix) {
-  const arr = _getLotesArray(prefix);
-  arr.push({ lote: '', kilos: 0 });
+  _getLotesArray(prefix).push({ campo: '', lote: '', kilos: 0 });
   renderLoteRows(prefix);
 }
 
 function eliminarLoteRow(prefix, idx) {
-  const arr = _getLotesArray(prefix);
-  arr.splice(idx, 1);
+  _getLotesArray(prefix).splice(idx, 1);
   renderLoteRows(prefix);
 }
 
-function actualizarLoteRow(prefix, idx, campo, kilos) {
+function actualizarCampoRow(prefix, idx, campo) {
   const arr = _getLotesArray(prefix);
   if (!arr[idx]) return;
-  if (campo !== undefined) arr[idx].lote = parseInt(campo) || campo;
-  if (kilos !== undefined) arr[idx].kilos = parseFloat(kilos) || 0;
+  arr[idx].campo = campo;
+  arr[idx].lote  = '';   // reset lote al cambiar campo
+  renderLoteRows(prefix);
+}
+
+function actualizarLoteRow(prefix, idx, lote) {
+  const arr = _getLotesArray(prefix);
+  if (!arr[idx]) return;
+  arr[idx].lote = lote;
+}
+
+function actualizarKilosRow(prefix, idx, kilos) {
+  const arr = _getLotesArray(prefix);
+  if (!arr[idx]) return;
+  arr[idx].kilos = parseFloat(kilos) || 0;
   recalcularTotalLotes(prefix);
 }
 
 function renderLoteRows(prefix) {
-  const arr = _getLotesArray(prefix);
-  const campo = prefix === 'ing'
-    ? document.getElementById('ing-campo').value
-    : (_bolsonParaCarga ? (bolsones.find(x => x.id === _bolsonParaCarga)||{}).campo : '');
+  const arr  = _getLotesArray(prefix);
   const cont = document.getElementById(prefix + '-lotes-rows');
   if (!cont) return;
-
   if (!arr.length) { cont.innerHTML = ''; recalcularTotalLotes(prefix); return; }
 
   cont.innerHTML = arr.map((row, i) => `
     <div class="lote-row" id="${prefix}-lote-row-${i}">
-      <select style="flex:0 0 110px" onchange="actualizarLoteRow('${prefix}',${i},this.value,undefined)">
-        ${_lotesOpciones(campo).replace(
-          `value="${row.lote}"`,
-          `value="${row.lote}" selected`
-        )}
+      <select style="flex:0 0 120px" onchange="actualizarCampoRow('${prefix}',${i},this.value)" title="Campo">
+        ${_camposOpciones(row.campo)}
+      </select>
+      <select style="flex:0 0 90px" onchange="actualizarLoteRow('${prefix}',${i},this.value)" title="Lote">
+        ${_lotesOpcionesDe(row.campo, row.lote)}
       </select>
       <input type="number" placeholder="Kilos" min="1" value="${row.kilos||''}"
-        style="flex:1"
-        oninput="actualizarLoteRow('${prefix}',${i},undefined,this.value)">
-      <div class="lote-row-del" onclick="eliminarLoteRow('${prefix}',${i})" title="Quitar lote">×</div>
+        style="flex:1;min-width:80px"
+        oninput="actualizarKilosRow('${prefix}',${i},this.value)">
+      <div class="lote-row-del" onclick="eliminarLoteRow('${prefix}',${i})" title="Quitar">×</div>
     </div>`
   ).join('');
   recalcularTotalLotes(prefix);
 }
 
 function recalcularTotalLotes(prefix) {
-  const arr = _getLotesArray(prefix);
+  const arr   = _getLotesArray(prefix);
   const total = arr.reduce((s, r) => s + (r.kilos || 0), 0);
   const bar   = document.getElementById(prefix + '-total-bar');
   const val   = document.getElementById(prefix + '-kilos-total');
   if (bar) bar.style.display = arr.length ? 'flex' : 'none';
-  if (val) val.textContent = total.toLocaleString('es-AR') + ' kg';
+  if (val) val.textContent   = total.toLocaleString('es-AR') + ' kg';
   return total;
 }
 
+// Etiqueta: "1, 2 y 3" — puede incluir campo si hay varios campos
 function _lotesLabel(lotes) {
   if (!lotes || !lotes.length) return '—';
-  const nums = lotes.map(l => l.lote);
+  const campos = [...new Set(lotes.map(l => l.campo).filter(Boolean))];
+  const nums   = lotes.map(l => l.lote);
   if (nums.length === 1) return String(nums[0]);
-  const last = nums.pop();
-  return nums.join(', ') + ' y ' + last;
+  const last = [...nums].pop();
+  return [...nums].slice(0, -1).join(', ') + ' y ' + last;
 }
 
-// ─── MULTI-BOLSÓN EGRESO ─────────────────────────────────────────
+// Campo de display del bolsón: "HORACIO" o "Varios campos"
+function _campoDisplay(b) {
+  if (!b.lotes || !b.lotes.length) return b.campo || '—';
+  const campos = [...new Set(b.lotes.map(l => l.campo).filter(Boolean))];
+  if (campos.length <= 1) return campos[0] || b.campo || '—';
+  return 'Varios campos';
+}
+
+// HTML de resumen de campos/lotes para el modal
+function _camposResumenHTML(b) {
+  if (!b.lotes || !b.lotes.length) return '';
+  const porCampo = {};
+  b.lotes.forEach(l => {
+    const c = l.campo || b.campo || '—';
+    if (!porCampo[c]) porCampo[c] = [];
+    porCampo[c].push({ lote: l.lote, kilos: l.kilos });
+  });
+  return Object.entries(porCampo).map(([campo, lotes]) => {
+    const totalCampo = lotes.reduce((s, l) => s + (l.kilos || 0), 0);
+    const detalle = lotes.map(l => `Lote ${l.lote}${l.kilos ? ': ' + l.kilos.toLocaleString('es-AR') + ' kg' : ''}`).join(' · ');
+    return `<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)">
+      <span class="badge-campo" style="font-size:11px">${campo}</span>
+      <span style="color:var(--text2);margin-left:6px">${detalle}</span>
+      ${totalCampo ? `<span style="color:var(--green);font-weight:600;margin-left:6px">${totalCampo.toLocaleString('es-AR')} kg</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── BÚSQUEDA DE BOLSÓN PARA EGRESO ─────────────────────────────
+function buscarBolsonParaEgreso(val) {
+  const id   = parseInt(val);
+  const cont = document.getElementById('egr-busq-resultado');
+  if (!id || id <= 0) { cont.innerHTML = ''; return; }
+
+  const b = bolsones.find(x => x.id === id);
+  if (!b) {
+    cont.innerHTML = `<div style="font-size:12px;color:var(--red);padding:6px 0">No se encontró el bolsón #${id}</div>`;
+    return;
+  }
+  const stock = b.ingresado - b.egresado;
+  if (stock <= 0) {
+    cont.innerHTML = `<div style="font-size:12px;color:var(--red);padding:6px 0">Bolsón #${id} sin stock disponible</div>`;
+    return;
+  }
+  const tc     = 'tag-' + b.grano.toLowerCase().replace('í','i').replace('ó','o');
+  const pct    = b.ingresado > 0 ? Math.round((stock / b.ingresado) * 100) : 0;
+  const yaSel  = !!_egrBolsones.find(x => x.id === b.id);
+  const campoD = _campoDisplay(b);
+
+  cont.innerHTML = `<div class="bolson-card ${yaSel ? 'selected' : ''}" style="margin-top:0">
+    <div class="bolson-left">
+      <div class="bolson-title">Bolsón #${b.id} — ${campoD} · Lotes ${_lotesLabel(b.lotes) || b.lote}</div>
+      <div class="bolson-meta">${b.inquilino}${b.cosecha?' · Cosecha '+b.cosecha:''} · <span class="tag ${tc}" style="font-size:10px">${b.grano}</span></div>
+      <div class="progbar" style="margin-top:6px"><div class="progbar-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="bolson-right" style="align-items:flex-end">
+      <div class="bolson-kg">${stock.toLocaleString('es-AR')} kg</div>
+      <div class="bolson-pct">${pct}% disp.</div>
+      <button class="bolson-add-btn${yaSel ? ' ya-sel' : ''}"
+        style="margin-top:6px"
+        onclick="${yaSel ? '' : 'agregarBolsonEgreso(' + b.id + ')'}"
+        ${yaSel ? 'disabled' : ''}>
+        ${yaSel ? '✓ Agregado' : '+ Agregar'}
+      </button>
+    </div>
+  </div>`;
+}
+
 function agregarBolsonEgreso(bolsonId) {
-  if (_egrBolsones.find(x => x.id === bolsonId)) return; // ya está
+  if (_egrBolsones.find(x => x.id === bolsonId)) return;
   _egrBolsones.push({ id: bolsonId, kg: 0 });
   renderEgrBolsonesSeleccionados();
-  actualizarBolsones(); // re-render grid para marcar como ya seleccionado
+  // re-render la búsqueda para marcar como agregado
+  const inp = document.getElementById('egr-busq-id');
+  if (inp && inp.value) buscarBolsonParaEgreso(inp.value);
 }
 
 function eliminarBolsonEgreso(bolsonId) {
   _egrBolsones = _egrBolsones.filter(x => x.id !== bolsonId);
   renderEgrBolsonesSeleccionados();
-  actualizarBolsones();
+  const inp = document.getElementById('egr-busq-id');
+  if (inp && inp.value) buscarBolsonParaEgreso(inp.value);
 }
 
 function actualizarKgBolsonEgreso(bolsonId, kg) {
@@ -2031,24 +2093,24 @@ function renderEgrBolsonesSeleccionados() {
   const wrap = document.getElementById('egr-bolsones-sel-wrap');
   const list = document.getElementById('egr-bolsones-sel-list');
   if (!wrap || !list) return;
-
   if (!_egrBolsones.length) { wrap.style.display = 'none'; recalcularTotalEgr(); return; }
   wrap.style.display = 'block';
 
   list.innerHTML = _egrBolsones.map(item => {
     const b = bolsones.find(x => x.id === item.id);
     if (!b) return '';
-    const stock = b.ingresado - b.egresado;
-    const tc = 'tag-' + b.grano.toLowerCase().replace('í','i').replace('ó','o');
+    const stock  = b.ingresado - b.egresado;
+    const tc     = 'tag-' + b.grano.toLowerCase().replace('í','i').replace('ó','o');
+    const campoD = _campoDisplay(b);
     return `<div class="bolson-sel-item">
       <div class="bolson-sel-info">
         <div class="bolson-sel-id">Bolsón #${b.id} <span class="tag ${tc}" style="font-size:10px">${b.grano}</span></div>
-        <div class="bolson-sel-meta">${b.campo} · Lote ${_lotesLabel(b.lotes)||b.lote} · disp: ${stock.toLocaleString('es-AR')} kg</div>
+        <div class="bolson-sel-meta">${campoD} · Lotes ${_lotesLabel(b.lotes)||b.lote} · disp: ${stock.toLocaleString('es-AR')} kg</div>
       </div>
-      <input type="number" class="bolson-sel-kg" placeholder="Kilos" min="1" max="${stock}"
+      <input type="number" placeholder="Kilos" min="1" max="${stock}"
         value="${item.kg||''}"
         oninput="actualizarKgBolsonEgreso(${b.id},this.value)"
-        style="width:110px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:var(--mono)">
+        style="width:110px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:var(--mono);flex-shrink:0">
       <div class="bolson-sel-del" onclick="eliminarBolsonEgreso(${b.id})" title="Quitar">×</div>
     </div>`;
   }).join('');
@@ -2058,49 +2120,48 @@ function renderEgrBolsonesSeleccionados() {
 // ─── OPERACIONES ─────────────────────────────────────────────────
 function registrarIngreso() {
   const inquilino = document.getElementById('ing-inquilino').value;
-  const campo     = document.getElementById('ing-campo').value;
   const grano     = document.getElementById('ing-grano').value;
   const cosecha   = document.getElementById('ing-cosecha').value.trim();
   const obs       = document.getElementById('ing-obs').value.trim();
   const fecha     = document.getElementById('ing-fecha').value || new Date().toISOString().split('T')[0];
   const alertEl   = document.getElementById('ing-alert');
 
-  if (!inquilino || !campo || !grano) {
-    alertEl.innerHTML = '<div class="alert alert-danger">Completá inquilino, campo y grano.</div>'; return;
+  if (!inquilino || !grano) {
+    alertEl.innerHTML = '<div class="alert alert-danger">Completá inquilino y grano.</div>'; return;
   }
   if (!_ingLotes.length) {
     alertEl.innerHTML = '<div class="alert alert-danger">Agregá al menos un lote con kilos.</div>'; return;
   }
-  const lotesValidos = _ingLotes.filter(l => l.lote && l.kilos > 0);
+  const lotesValidos = _ingLotes.filter(l => l.campo && l.lote && l.kilos > 0);
   if (!lotesValidos.length) {
-    alertEl.innerHTML = '<div class="alert alert-danger">Completá lote y kilos en cada fila.</div>'; return;
+    alertEl.innerHTML = '<div class="alert alert-danger">Completá campo, lote y kilos en cada fila.</div>'; return;
   }
-  const totalKilos = lotesValidos.reduce((s, l) => s + l.kilos, 0);
 
-  // Lote de display: "1, 2 y 3"
+  const totalKilos = lotesValidos.reduce((s, l) => s + l.kilos, 0);
+  const campos     = [...new Set(lotesValidos.map(l => l.campo))];
+  const campoRef   = campos.length === 1 ? campos[0] : 'Varios campos';
   const loteDisplay = _lotesLabel(lotesValidos);
-  // Primer lote numérico para compatibilidad
-  const loteRef = lotesValidos[0].lote;
 
   const primeraCarga = { fecha, kilos: totalKilos, obs, lotes: [...lotesValidos], fotos: [..._fotosReg._ingFotos] };
   const b = {
-    id: nextBolson++, inquilino, campo,
-    lote: loteDisplay,       // display "1 y 2"
-    lotes: [...lotesValidos], // detalle [{lote,kilos}]
+    id: nextBolson++, inquilino,
+    campo: campoRef,            // "HORACIO" o "Varios campos"
+    lote: loteDisplay,
+    lotes: [...lotesValidos],   // [{campo, lote, kilos}]
     grano, ingresado: totalKilos, egresado: 0, obs, cosecha, fecha,
     cargas: [primeraCarga]
   };
   bolsones.push(b);
   movimientos.push({
-    movId: nextMovId++, fecha, tipo: 'ingreso', inquilino, campo,
+    movId: nextMovId++, fecha, tipo: 'ingreso', inquilino, campo: campoRef,
     lote: loteDisplay, grano, kg: totalKilos,
-    ref: obs || `Ingreso · Lotes ${loteDisplay}`, bolsonId: b.id
+    ref: obs || `Ingreso · ${campoRef} Lotes ${loteDisplay}`, bolsonId: b.id
   });
 
   guardarEstado();
-  alertEl.innerHTML = `<div class="alert alert-success">✅ Bolsón #${b.id} creado: ${totalKilos.toLocaleString('es-AR')} kg de ${grano} — ${campo} Lotes ${loteDisplay} (${inquilino})${cosecha ? ' · Cosecha ' + cosecha : ''}</div>`;
+  alertEl.innerHTML = `<div class="alert alert-success">✅ Bolsón #${b.id} creado: ${totalKilos.toLocaleString('es-AR')} kg de ${grano} — ${campoRef} Lotes ${loteDisplay} (${inquilino})${cosecha ? ' · Cosecha ' + cosecha : ''}</div>`;
 
-  ['ing-inquilino','ing-campo','ing-grano','ing-obs','ing-cosecha'].forEach(id => document.getElementById(id).value = '');
+  ['ing-inquilino','ing-grano','ing-obs','ing-cosecha'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('ing-fecha').value = '';
   document.getElementById('ing-fotos-preview').innerHTML = '';
   document.getElementById('ing-lotes-rows').innerHTML = '';
@@ -2270,8 +2331,8 @@ function agregarKilosExistente() {
 
   if (!fecha) { alertEl.innerHTML = '<div class="alert alert-danger">Seleccioná la fecha de descarga.</div>'; return; }
   if (!_cargaLotes.length) { alertEl.innerHTML = '<div class="alert alert-danger">Agregá al menos un lote con kilos.</div>'; return; }
-  const lotesValidos = _cargaLotes.filter(l => l.lote && l.kilos > 0);
-  if (!lotesValidos.length) { alertEl.innerHTML = '<div class="alert alert-danger">Completá lote y kilos en cada fila.</div>'; return; }
+  const lotesValidos = _cargaLotes.filter(l => l.campo && l.lote && l.kilos > 0);
+  if (!lotesValidos.length) { alertEl.innerHTML = '<div class="alert alert-danger">Completá campo, lote y kilos en cada fila.</div>'; return; }
 
   const kilos = lotesValidos.reduce((s, l) => s + l.kilos, 0);
   const loteDisplay = _lotesLabel(lotesValidos);
@@ -2279,11 +2340,16 @@ function agregarKilosExistente() {
   if (!b.cargas) b.cargas = [];
   b.cargas.push({ fecha, kilos, obs, lotes: [...lotesValidos], fotos: [...(_fotosReg._cargaFotos || [])] });
   b.ingresado += kilos;
-  // Actualizar lote display si hay nuevos lotes
-  if (b.lotes) {
-    lotesValidos.forEach(lv => { if (!b.lotes.find(x => x.lote === lv.lote)) b.lotes.push({lote: lv.lote, kilos: 0}); });
-    b.lote = _lotesLabel(b.lotes);
-  }
+  // Actualizar lotes y campo display del bolsón
+  if (!b.lotes) b.lotes = [];
+  lotesValidos.forEach(lv => {
+    if (!b.lotes.find(x => x.campo === lv.campo && String(x.lote) === String(lv.lote))) {
+      b.lotes.push({ campo: lv.campo, lote: lv.lote, kilos: 0 });
+    }
+  });
+  const todosLosCampos = [...new Set(b.lotes.map(l => l.campo).filter(Boolean))];
+  b.campo = todosLosCampos.length > 1 ? 'Varios campos' : (todosLosCampos[0] || b.campo);
+  b.lote  = _lotesLabel(b.lotes);
 
   movimientos.push({
     movId: nextMovId++, fecha, tipo: 'ingreso', inquilino: b.inquilino, campo: b.campo,
@@ -2312,9 +2378,11 @@ function verCargasDetalle(bolsonId) {
   const b = bolsones.find(x => x.id === bolsonId);
   if (!b) return;
 
-  document.getElementById('cargas-modal-titulo').textContent = `Bolsón #${b.id} — ${b.grano} · ${b.campo} Lote ${b.lote}`;
+  document.getElementById('cargas-modal-titulo').textContent = `Bolsón #${b.id} — ${b.grano} · ${_campoDisplay(b)}`;
+  const resumen = _camposResumenHTML(b);
   document.getElementById('cargas-modal-sub').innerHTML =
-    `${b.inquilino}${b.cosecha?' · Cosecha '+b.cosecha:''} · Total ingresado: <strong>${b.ingresado.toLocaleString('es-AR')} kg</strong>`;
+    `${b.inquilino}${b.cosecha?' · Cosecha '+b.cosecha:''} · Total ingresado: <strong>${b.ingresado.toLocaleString('es-AR')} kg</strong>` +
+    (resumen ? `<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Composición del bolsón</div>${resumen}</div>` : '');
 
   const cargas = b.cargas || [];
   if (!cargas.length) {
@@ -2871,7 +2939,7 @@ function renderBolsones() {
     const nFotos  = b.cargas ? b.cargas.reduce((a,c)=>a+(c.fotos?c.fotos.length:0),0) : 0;
     return `<tr>
       <td class="num" style="color:var(--text3)">#${b.id}</td>
-      <td><span class="badge-campo">${b.campo}</span></td>
+      <td><span class="badge-campo">${_campoDisplay(b)}</span></td>
       <td><span class="badge-inq">${b.inquilino}</span></td>
       <td class="num">${_lotesLabel(b.lotes) || b.lote}</td>
       <td><span class="tag ${tc}">${b.grano}</span></td>
