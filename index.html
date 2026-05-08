@@ -429,6 +429,21 @@ tr:hover td{background:rgba(0,0,0,0.016)}
 
 /* MULTI-LOTE */
 .lote-row{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;margin-bottom:6px;animation:fadeIn 0.2s var(--ease) both}
+
+/* ── ESTRUCTURA EDITOR ──────────────────────────────────────────── */
+.campo-card-edit{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px}
+.campo-header-edit{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.campo-name-disp{font-size:15px;font-weight:700;color:var(--text);flex:1}
+.lote-edit-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);margin-bottom:5px}
+.lote-edit-row input{width:80px;padding:4px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono);background:var(--surface)}
+.lote-edit-row label{font-size:11px;color:var(--text3);white-space:nowrap}
+.rinde-val{font-weight:700;color:var(--green);font-family:var(--mono)}
+.campaña-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:12px}
+.campaña-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.campaña-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.campaña-item{background:var(--bg2);border-radius:var(--radius);padding:8px 10px;text-align:center}
+.campaña-item-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.campaña-item-val{font-size:14px;font-weight:700;font-family:var(--mono);color:var(--text)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 .lote-row select,.lote-row input{flex:1;min-width:0}
 .lote-row-del{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--red-bg);color:var(--red);border:1px solid rgba(139,24,24,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;font-weight:700;line-height:1;transition:all var(--dur) var(--ease)}
@@ -649,6 +664,7 @@ tr:hover td{background:rgba(0,0,0,0.016)}
           <tbody id="tbody-dashboard"></tbody>
         </table>
       </div>
+      <div id="totales-campaña-dashboard" style="margin-top:16px"></div>
     </div>
 
     <!-- ESTRUCTURA -->
@@ -676,6 +692,7 @@ tr:hover td{background:rgba(0,0,0,0.016)}
           <tbody id="tbody-bolsones"></tbody>
         </table>
       </div>
+      <div id="totales-campaña-bolsones" style="margin-top:16px"></div>
     </div>
 
     <!-- INGRESO -->
@@ -721,8 +738,18 @@ tr:hover td{background:rgba(0,0,0,0.016)}
                 <input type="text" id="ing-cosecha" placeholder="Ej: 25/26" maxlength="10">
               </div>
               <div class="form-group">
+                <label>N° bolsón en campaña <span style="font-size:11px;color:var(--text3);font-weight:400">(opcional — se auto-asigna)</span></label>
+                <input type="number" id="ing-num-campaña" placeholder="Ej: 1" min="1">
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
                 <label>Fecha</label>
                 <input type="date" id="ing-fecha">
+              </div>
+              <div class="form-group">
+                <label>Observaciones (opcional)</label>
+                <input type="text" id="ing-obs" placeholder="Ej: Cosecha lote norte">
               </div>
             </div>
 
@@ -737,10 +764,6 @@ tr:hover td{background:rgba(0,0,0,0.016)}
               </div>
             </div>
 
-            <div class="form-group" style="margin-bottom:14px">
-              <label>Observaciones (opcional)</label>
-              <input type="text" id="ing-obs" placeholder="Ej: Cosecha lote norte">
-            </div>
             <div class="form-group" style="margin-bottom:16px">
               <label>Fotos del comprobante (opcional)</label>
               <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
@@ -1495,12 +1518,28 @@ tr:hover td{background:rgba(0,0,0,0.016)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 // ─── CONFIGURACIÓN ───────────────────────────────────────────────
-const CAMPOS = {
-  "HORACIO":        { inquilino: "JAVIER",  lotes: [1,2] },
-  "DURAZNILLO":     { inquilino: "JAM&JAM", lotes: [1,4,5,6] },
-  "LOS QUEBRACHOS": { inquilino: "JAVIER",  lotes: [1,2,4] },
-  "TONY":           { inquilino: "JAVIER",  lotes: [1,2] }
+// CAMPOS es editable en runtime — se guarda en Firebase también
+// Estructura: { "HORACIO": { inquilino, lotes: [{num, ha}] } }
+let CAMPOS_DATA = {
+  "HORACIO":        { inquilino: "JAVIER",  lotes: [{num:1,ha:0},{num:2,ha:0}] },
+  "DURAZNILLO":     { inquilino: "JAM&JAM", lotes: [{num:1,ha:0},{num:4,ha:0},{num:5,ha:0},{num:6,ha:0}] },
+  "LOS QUEBRACHOS": { inquilino: "JAVIER",  lotes: [{num:1,ha:0},{num:2,ha:0},{num:4,ha:0}] },
+  "TONY":           { inquilino: "JAVIER",  lotes: [{num:1,ha:0},{num:2,ha:0}] }
 };
+
+// CAMPOS sigue siendo el objeto de compatibilidad (lotes como array de números)
+// Se reconstruye desde CAMPOS_DATA
+function _rebuildCampos() {
+  const C = {};
+  Object.entries(CAMPOS_DATA).forEach(([c, info]) => {
+    C[c] = { inquilino: info.inquilino, lotes: info.lotes.map(l => l.num) };
+  });
+  return C;
+}
+let CAMPOS = _rebuildCampos();
+
+// Numeración de bolsones por campaña: { "25/26": 3, "24/25": 5, ... }
+let nextBolsonPorCampaña = {};
 
 let bolsones = [], movimientos = [], nextBolson = 1, bolsonSeleccionado = null;
 let nextMovId = 1;
@@ -2142,12 +2181,25 @@ function registrarIngreso() {
   const campoRef   = campos.length === 1 ? campos[0] : 'Varios campos';
   const loteDisplay = _lotesLabel(lotesValidos);
 
+  // Numeración por campaña: usar manual si se ingresó, si no auto-incrementar
+  const campKey = cosecha || 'sin-campaña';
+  if (!nextBolsonPorCampaña[campKey]) nextBolsonPorCampaña[campKey] = 1;
+  const numManual = parseInt(document.getElementById('ing-num-campaña').value);
+  let numEnCampaña;
+  if (numManual && numManual > 0) {
+    numEnCampaña = numManual;
+    // Actualizar el contador si el manual es mayor al actual
+    if (numManual >= nextBolsonPorCampaña[campKey]) {
+      nextBolsonPorCampaña[campKey] = numManual + 1;
+    }
+  } else {
+    numEnCampaña = nextBolsonPorCampaña[campKey]++;
+  }
+
   const primeraCarga = { fecha, kilos: totalKilos, obs, lotes: [...lotesValidos], fotos: [..._fotosReg._ingFotos] };
   const b = {
-    id: nextBolson++, inquilino,
-    campo: campoRef,            // "HORACIO" o "Varios campos"
-    lote: loteDisplay,
-    lotes: [...lotesValidos],   // [{campo, lote, kilos}]
+    id: nextBolson++, numCampaña: numEnCampaña, inquilino,
+    campo: campoRef, lote: loteDisplay, lotes: [...lotesValidos],
     grano, ingresado: totalKilos, egresado: 0, obs, cosecha, fecha,
     cargas: [primeraCarga]
   };
@@ -2163,6 +2215,7 @@ function registrarIngreso() {
 
   ['ing-inquilino','ing-grano','ing-obs','ing-cosecha'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('ing-fecha').value = '';
+  document.getElementById('ing-num-campaña').value = '';
   document.getElementById('ing-fotos-preview').innerHTML = '';
   document.getElementById('ing-lotes-rows').innerHTML = '';
   document.getElementById('ing-total-bar').style.display = 'none';
@@ -2927,39 +2980,85 @@ function renderDashboard() {
     const d=pc[c]; const t=d.soja+d.maiz+d.trigo+d.sorgo;
     return `<tr><td><span class="badge-campo">${c}</span></td><td><span class="badge-inq">${CAMPOS[c].inquilino}</span></td><td class="num">${d.soja>0?d.soja.toLocaleString('es-AR'):'—'}</td><td class="num">${d.maiz>0?d.maiz.toLocaleString('es-AR'):'—'}</td><td class="num">${d.trigo>0?d.trigo.toLocaleString('es-AR'):'—'}</td><td class="num">${d.sorgo>0?d.sorgo.toLocaleString('es-AR'):'—'}</td><td class="num" style="font-weight:600">${t>0?t.toLocaleString('es-AR'):'—'}</td></tr>`;
   }).join('');
+  _renderTotalesCampaña('totales-campaña-dashboard');
 }
 
 function renderBolsones() {
   const tbody = document.getElementById('tbody-bolsones');
-  if (!bolsones.length) { tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state">No hay bolsones registrados aún</div></td></tr>'; return; }
+  if (!bolsones.length) { tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state">No hay bolsones registrados aún</div></td></tr>'; return; }
+
   tbody.innerHTML = bolsones.map(b => {
-    const s=b.ingresado-b.egresado; const pct=b.ingresado>0?Math.round((s/b.ingresado)*100):0;
-    const tc='tag-'+b.grano.toLowerCase().replace('í','i').replace('ó','o');
-    const nCargas = b.cargas ? b.cargas.length : (b.ingresado>0?1:0);
-    const nFotos  = b.cargas ? b.cargas.reduce((a,c)=>a+(c.fotos?c.fotos.length:0),0) : 0;
+    const s   = b.ingresado - b.egresado;
+    const pct = b.ingresado > 0 ? Math.round((s / b.ingresado) * 100) : 0;
+    const tc  = 'tag-' + b.grano.toLowerCase().replace('í','i').replace('ó','o');
+    const nCargas = b.cargas ? b.cargas.length : (b.ingresado > 0 ? 1 : 0);
+    const nFotos  = b.cargas ? b.cargas.reduce((a,c) => a + (c.fotos ? c.fotos.length : 0), 0) : 0;
+    // Mostrar número por campaña si existe
+    const numDisplay = b.numCampaña ? `B${b.numCampaña}` : `#${b.id}`;
     return `<tr>
-      <td class="num" style="color:var(--text3)">#${b.id}</td>
+      <td class="num" style="color:var(--text3)">${numDisplay}</td>
       <td><span class="badge-campo">${_campoDisplay(b)}</span></td>
       <td><span class="badge-inq">${b.inquilino}</span></td>
       <td class="num">${_lotesLabel(b.lotes) || b.lote}</td>
       <td><span class="tag ${tc}">${b.grano}</span></td>
       <td class="num" style="color:var(--text3)">${b.cosecha||'—'}</td>
       <td class="num">${b.ingresado.toLocaleString('es-AR')}</td>
-      <td class="num">${b.egresado>0?b.egresado.toLocaleString('es-AR'):'—'}</td>
+      <td class="num">${b.egresado > 0 ? b.egresado.toLocaleString('es-AR') : '—'}</td>
       <td class="num" style="font-weight:600">${s.toLocaleString('es-AR')}</td>
       <td>
         <div style="font-size:11px;color:var(--text3);margin-bottom:3px">${pct}%</div>
         <div class="progbar" style="width:80px"><div class="progbar-fill" style="width:${pct}%"></div></div>
       </td>
       <td>
-        <button onclick="verCargasDetalle(${b.id})"
-          style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);
-                 font-size:11px;cursor:pointer;color:var(--text2);font-family:var(--sans);white-space:nowrap">
-          📦 ${nCargas} carga${nCargas!==1?'s':''}${nFotos>0?' · 📷'+nFotos:''}
-        </button>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button onclick="abrirEditarBolson(${b.id})" class="accion-btn accion-edit">✏️</button>
+          <button onclick="verCargasDetalle(${b.id})"
+            style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);
+                   font-size:11px;cursor:pointer;color:var(--text2);font-family:var(--sans);white-space:nowrap">
+            📦 ${nCargas}${nFotos > 0 ? ' · 📷' + nFotos : ''}
+          </button>
+        </div>
       </td>
     </tr>`;
   }).join('');
+
+  // Totales por campaña debajo de la tabla
+  const totCont = document.getElementById('totales-campaña-bolsones');
+  if (totCont) _renderTotalesCampaña('totales-campaña-bolsones');
+}
+
+function _renderTotalesCampaña(containerId) {
+  const cont = document.getElementById(containerId);
+  if (!cont) return;  // defensive: el div puede no existir en todas las vistas
+  // Agrupar por campaña
+  const porCampaña = {};
+  bolsones.forEach(b => {
+    const camp = b.cosecha || 'Sin campaña';
+    if (!porCampaña[camp]) porCampaña[camp] = { soja:0, maiz:0, trigo:0, sorgo:0, total:0 };
+    const g = b.grano.toLowerCase().replace('í','i').replace('ó','o');
+    if (porCampaña[camp][g] !== undefined) porCampaña[camp][g] += b.ingresado;
+    porCampaña[camp].total += b.ingresado;
+  });
+  if (!Object.keys(porCampaña).length) { cont.innerHTML = ''; return; }
+
+  const granos = ['soja','maiz','trigo','sorgo'];
+  const labels  = { soja:'Soja', maiz:'Maíz', trigo:'Trigo', sorgo:'Sorgo' };
+  cont.innerHTML = Object.entries(porCampaña)
+    .sort(([a],[b]) => b.localeCompare(a))
+    .map(([camp, data]) => `
+      <div class="campaña-block">
+        <div class="campaña-title">🌾 Campaña ${camp}
+          <span style="font-size:11px;font-weight:400;color:var(--text3)">${bolsones.filter(b=>( b.cosecha||'Sin campaña')===camp).length} bolsones · ${data.total.toLocaleString('es-AR')} kg totales ingresados</span>
+        </div>
+        <div class="campaña-grid">
+          ${granos.filter(g => data[g] > 0).map(g => `
+            <div class="campaña-item">
+              <div class="campaña-item-label">${labels[g]}</div>
+              <div class="campaña-item-val">${data[g].toLocaleString('es-AR')}</div>
+              <div style="font-size:10px;color:var(--text3)">kg ingresados</div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
 }
 
 function renderMovimientos() {
@@ -3009,16 +3108,126 @@ function renderMovimientos() {
 }
 
 function renderEstructura() {
-  document.getElementById('campos-list').innerHTML = Object.keys(CAMPOS).map(c => {
-    const info = CAMPOS[c];
-    return `<div class="campo-card">
-      <div style="flex:1">
-        <div class="campo-name">${c}</div>
-        <div class="campo-inq">Inquilino: ${info.inquilino}</div>
-        <div class="lotes-wrap">${info.lotes.map(l=>`<span class="lote-pill">Lote ${l}</span>`).join('')}</div>
+  const cont = document.getElementById('campos-list');
+
+  // Calcular kilos ingresados por campo+lote agrupado por cosecha
+  const rindes = {}; // {campo: {loteNum: {cosecha: kg}}}
+  bolsones.forEach(b => {
+    const cosecha = b.cosecha || 'Sin campaña';
+    (b.lotes || []).forEach(l => {
+      const c = l.campo || b.campo;
+      if (!rindes[c]) rindes[c] = {};
+      if (!rindes[c][l.lote]) rindes[c][l.lote] = {};
+      rindes[c][l.lote][cosecha] = (rindes[c][l.lote][cosecha] || 0) + (l.kilos || 0);
+    });
+    // Compatibilidad bolsones viejos sin lotes detallados
+    if (!b.lotes || !b.lotes.length) {
+      const c = b.campo; const ln = b.lote;
+      if (c && ln) {
+        if (!rindes[c]) rindes[c] = {};
+        if (!rindes[c][ln]) rindes[c][ln] = {};
+        rindes[c][ln][cosecha] = (rindes[c][ln][cosecha] || 0) + b.ingresado;
+      }
+    }
+  });
+
+  cont.innerHTML = Object.entries(CAMPOS_DATA).map(([campo, info]) => {
+    const totalHa = info.lotes.reduce((s, l) => s + (l.ha || 0), 0);
+
+    // Tabla de rindes por lote y cosecha
+    const cosechasUsadas = [...new Set(
+      (info.lotes || []).flatMap(l =>
+        Object.keys((rindes[campo] && rindes[campo][l.num]) || {})
+      )
+    )].sort().reverse();
+
+    const rindeTable = cosechasUsadas.length ? `
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        <div class="section-label" style="margin-bottom:8px">📊 Rindes por lote (kilos ingresados)</div>
+        <table class="rinde-table" style="width:100%;font-size:12px">
+          <thead><tr>
+            <th>Lote</th><th>Ha</th>
+            ${cosechasUsadas.map(co=>`<th>Campaña ${co}</th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${info.lotes.map(l => {
+              const lRindes = (rindes[campo] && rindes[campo][l.num]) || {};
+              return `<tr>
+                <td>Lote ${l.num}</td>
+                <td class="num">${l.ha ? l.ha + ' ha' : '—'}</td>
+                ${cosechasUsadas.map(co => {
+                  const kg = lRindes[co] || 0;
+                  const qq = l.ha && kg ? (kg / 100 / l.ha).toFixed(1) : null;
+                  return `<td class="num">${kg ? kg.toLocaleString('es-AR') + ' kg' : '—'}
+                    ${qq ? `<br><span class="rinde-val">${qq} qq/ha</span>` : ''}</td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : '';
+
+    return `<div class="campo-card-edit">
+      <div class="campo-header-edit">
+        <div style="flex:1">
+          <div class="campo-name-disp">${campo}</div>
+          <div style="font-size:12px;color:var(--text3)">Inquilino: ${info.inquilino} · ${info.lotes.length} lotes · ${totalHa > 0 ? totalHa + ' ha totales' : 'Sin hectáreas cargadas'}</div>
+        </div>
+        <button class="add-lote-btn" onclick="agregarLoteEstructura('${campo}')">+ Agregar lote</button>
       </div>
+
+      <div id="lotes-edit-${campo.replace(/\s/g,'_')}">
+        ${info.lotes.map((l, i) => `
+          <div class="lote-edit-row" id="lote-edit-${campo.replace(/\s/g,'_')}-${i}">
+            <span style="font-size:12px;color:var(--text2);width:40px">Lote</span>
+            <input type="number" value="${l.num}" min="1" style="width:60px"
+              onchange="editarNumLote('${campo}',${i},this.value)" placeholder="N°">
+            <label style="margin-left:8px">Ha:</label>
+            <input type="number" value="${l.ha||''}" min="0" step="0.1" style="width:70px"
+              onchange="editarHaLote('${campo}',${i},this.value)" placeholder="0">
+            <span style="font-size:11px;color:var(--text3)">ha</span>
+            <button class="accion-btn accion-del" style="margin-left:auto"
+              onclick="eliminarLoteEstructura('${campo}',${i})">🗑️</button>
+          </div>`).join('')}
+      </div>
+      ${rindeTable}
     </div>`;
   }).join('');
+}
+
+// ─── ESTRUCTURA EDITOR FUNCTIONS ─────────────────────────────────
+function agregarLoteEstructura(campo) {
+  if (!CAMPOS_DATA[campo]) return;
+  const maxNum = Math.max(0, ...CAMPOS_DATA[campo].lotes.map(l => l.num));
+  CAMPOS_DATA[campo].lotes.push({ num: maxNum + 1, ha: 0 });
+  CAMPOS = _rebuildCampos();
+  guardarEstado();
+  renderEstructura();
+  mostrarToast(`✅ Lote agregado a ${campo}`);
+}
+
+function eliminarLoteEstructura(campo, idx) {
+  if (!CAMPOS_DATA[campo]) return;
+  if (!confirm(`¿Eliminar Lote ${CAMPOS_DATA[campo].lotes[idx].num} de ${campo}?`)) return;
+  CAMPOS_DATA[campo].lotes.splice(idx, 1);
+  CAMPOS = _rebuildCampos();
+  guardarEstado();
+  renderEstructura();
+  mostrarToast('🗑️ Lote eliminado');
+}
+
+function editarNumLote(campo, idx, val) {
+  if (!CAMPOS_DATA[campo] || !CAMPOS_DATA[campo].lotes[idx]) return;
+  CAMPOS_DATA[campo].lotes[idx].num = parseInt(val) || CAMPOS_DATA[campo].lotes[idx].num;
+  CAMPOS = _rebuildCampos();
+  guardarEstado();
+}
+
+function editarHaLote(campo, idx, val) {
+  if (!CAMPOS_DATA[campo] || !CAMPOS_DATA[campo].lotes[idx]) return;
+  CAMPOS_DATA[campo].lotes[idx].ha = parseFloat(val) || 0;
+  guardarEstado();
+  renderEstructura(); // re-render para actualizar total ha
 }
 
 // ─── PERSISTENCIA — Firebase (nube) + localStorage (respaldo local) ───
@@ -3036,6 +3245,8 @@ function guardarEstado() {
     localStorage.setItem('sg_pctSueldo',   String(pctSueldo));
     localStorage.setItem('sg_camiones',    JSON.stringify(camiones));
     localStorage.setItem('sg_cisterna',    JSON.stringify(cisterna));
+    localStorage.setItem('sg_camposData',  JSON.stringify(CAMPOS_DATA));
+    localStorage.setItem('sg_nextBolsonCampaña', JSON.stringify(nextBolsonPorCampaña));
   } catch(e) { console.warn('localStorage no disponible:', e); }
 
   // 2) Guardar en Firebase si está disponible
@@ -3044,15 +3255,10 @@ function guardarEstado() {
     _guardandoFirebase = true;
 
     const estado = {
-      bolsones,
-      movimientos,
-      nextBolson,
-      nextMovId,
-      acopios,
-      choferes,
-      pctSueldo,
-      camiones,
-      cisterna,
+      bolsones, movimientos, nextBolson, nextMovId,
+      acopios, choferes, pctSueldo, camiones, cisterna,
+      camposData: CAMPOS_DATA,
+      nextBolsonPorCampaña,
       ultimaActualizacion: new Date().toISOString()
     };
 
@@ -3072,7 +3278,15 @@ function guardarEstado() {
 }
 
 function cargarEstado() {
-  // Intentar cargar desde Firebase primero; si no está listo, usar localStorage
+  // Función interna que hace el render completo tras cargar los datos
+  function _renderCompleto() {
+    poblarFiltros();
+    renderDashboard();
+    renderBolsones();
+    renderMovimientos();
+    renderEstructura();
+  }
+
   if (window._firebaseReady && window._fbGet) {
     mostrarToast('☁️ Cargando datos de la nube…');
     window._fbGet('stock_granos')
@@ -3085,29 +3299,28 @@ function cargarEstado() {
           if (d.nextMovId)   nextMovId   = d.nextMovId;
           if (d.acopios)     acopios     = d.acopios;
           if (d.choferes)  { choferes    = d.choferes; _sanitizarChoferes(); }
-          if (d.pctSueldo)   pctSueldo   = d.pctSueldo;
-          if (d.choferes)    choferes    = d.choferes;
           if (d.pctSueldo !== undefined) pctSueldo = d.pctSueldo;
           if (d.camiones)    camiones    = d.camiones;
           if (d.cisterna)    cisterna    = d.cisterna;
+          if (d.camposData)  { CAMPOS_DATA = d.camposData; CAMPOS = _rebuildCampos(); }
+          if (d.nextBolsonPorCampaña) nextBolsonPorCampaña = d.nextBolsonPorCampaña;
           deduplicarAcopios();
           mostrarToast('✅ Datos sincronizados');
         } else {
-          // Firebase vacío → intentar migrar desde localStorage
+          // Firebase vacío → migrar desde localStorage
           _cargarDesdeLocal();
           if (bolsones.length > 0 || movimientos.length > 0) {
-            guardarEstado(); // subir al cloud los datos locales existentes
+            guardarEstado();
             mostrarToast('☁️ Datos locales migrados a la nube');
           }
         }
-        // Refrescar pantalla
-        renderDashboard(); renderBolsones(); renderMovimientos();
-        poblarFiltros();
+        _renderCompleto();
       })
       .catch(err => {
         console.warn('No se pudo cargar desde Firebase:', err);
         _cargarDesdeLocal();
         mostrarToast('📴 Sin conexión — datos locales');
+        _renderCompleto();
       });
   } else {
     // Firebase aún no inicializado: esperar hasta 3 segundos
@@ -3121,6 +3334,7 @@ function cargarEstado() {
         clearInterval(esperar);
         _cargarDesdeLocal();
         mostrarToast('⚠️ Firebase no disponible — datos locales');
+        _renderCompleto();
       }
     }, 100);
   }
@@ -3137,6 +3351,8 @@ function _cargarDesdeLocal() {
     const p   = localStorage.getItem('sg_pctSueldo');
     const cam = localStorage.getItem('sg_camiones');
     const cist= localStorage.getItem('sg_cisterna');
+    const cd  = localStorage.getItem('sg_camposData');
+    const nbc = localStorage.getItem('sg_nextBolsonCampaña');
     if (b)   bolsones    = JSON.parse(b);
     if (m)   movimientos = JSON.parse(m);
     if (n)   nextBolson  = parseInt(n);
@@ -3146,6 +3362,8 @@ function _cargarDesdeLocal() {
     if (p)   pctSueldo   = parseFloat(p);
     if (cam) camiones    = JSON.parse(cam);
     if (cist)cisterna    = JSON.parse(cist);
+    if (cd)  { CAMPOS_DATA = JSON.parse(cd); CAMPOS = _rebuildCampos(); }
+    if (nbc) nextBolsonPorCampaña = JSON.parse(nbc);
     deduplicarAcopios();
   } catch(e) { console.warn('No se pudo restaurar desde localStorage:', e); }
 }
@@ -3886,6 +4104,91 @@ function guardarEdicionViaje() {
 function cerrarEditViaje(e) {
   if (e && e.target !== document.getElementById('edit-viaje-overlay')) return;
   document.getElementById('edit-viaje-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ─── EDITAR BOLSÓN ───────────────────────────────────────────────
+function abrirEditarBolson(bolsonId) {
+  const b = bolsones.find(x => x.id === bolsonId);
+  if (!b) return;
+
+  document.getElementById('edit-bolson-id').value = bolsonId;
+  document.getElementById('edit-bolson-subtitulo').textContent =
+    `${b.numCampaña ? 'B' + b.numCampaña : '#' + b.id} · ${b.grano} · ${_campoDisplay(b)} · Cosecha ${b.cosecha||'—'}`;
+
+  document.getElementById('edit-bolson-inquilino').value       = b.inquilino  || '';
+  document.getElementById('edit-bolson-grano').value           = b.grano      || 'Soja';
+  document.getElementById('edit-bolson-cosecha').value         = b.cosecha    || '';
+  document.getElementById('edit-bolson-num-campaña').value     = b.numCampaña || '';
+  document.getElementById('edit-bolson-fecha').value           = b.fecha      || '';
+  document.getElementById('edit-bolson-obs').value             = b.obs        || '';
+  document.getElementById('edit-bolson-ingresado').value       = b.ingresado  || 0;
+  document.getElementById('edit-bolson-egresado').value        = b.egresado   || 0;
+  document.getElementById('edit-bolson-alert').innerHTML       = '';
+
+  document.getElementById('edit-bolson-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function guardarEdicionBolson() {
+  const bolsonId   = parseInt(document.getElementById('edit-bolson-id').value);
+  const b          = bolsones.find(x => x.id === bolsonId);
+  const alertEl    = document.getElementById('edit-bolson-alert');
+  if (!b) { alertEl.innerHTML = '<div class="alert alert-danger">Bolsón no encontrado.</div>'; return; }
+
+  const inquilino  = document.getElementById('edit-bolson-inquilino').value;
+  const grano      = document.getElementById('edit-bolson-grano').value;
+  const cosecha    = document.getElementById('edit-bolson-cosecha').value.trim();
+  const numCampañaManual = parseInt(document.getElementById('edit-bolson-num-campaña').value);
+  const fecha      = document.getElementById('edit-bolson-fecha').value;
+  const obs        = document.getElementById('edit-bolson-obs').value.trim();
+  const newIng     = parseFloat(document.getElementById('edit-bolson-ingresado').value) || 0;
+  const newEgr     = parseFloat(document.getElementById('edit-bolson-egresado').value) || 0;
+
+  if (newEgr > newIng) {
+    alertEl.innerHTML = '<div class="alert alert-danger">Los kg egresados no pueden superar los ingresados.</div>'; return;
+  }
+
+  const oldIng = b.ingresado;
+
+  // Actualizar el bolsón
+  b.inquilino = inquilino;
+  b.grano     = grano;
+  b.cosecha   = cosecha;
+  b.fecha     = fecha;
+  b.obs       = obs;
+  b.ingresado = newIng;
+  b.egresado  = newEgr;
+  // Actualizar número de campaña si se editó manualmente
+  if (numCampañaManual && numCampañaManual > 0) {
+    b.numCampaña = numCampañaManual;
+    const campKey = cosecha || 'sin-campaña';
+    if (!nextBolsonPorCampaña[campKey]) nextBolsonPorCampaña[campKey] = 1;
+    if (numCampañaManual >= nextBolsonPorCampaña[campKey]) {
+      nextBolsonPorCampaña[campKey] = numCampañaManual + 1;
+    }
+  }
+
+  // Ajustar movimiento de ingreso asociado si cambiaron los kg
+  if (newIng !== oldIng) {
+    const mov = movimientos.find(m => m.bolsonId === bolsonId && m.tipo === 'ingreso');
+    if (mov) {
+      mov.kg   = newIng;
+      mov.grano= grano;
+      mov.ref  = (mov.ref || '') + ` [ajustado: ${oldIng.toLocaleString('es-AR')} → ${newIng.toLocaleString('es-AR')} kg]`;
+    }
+  }
+
+  guardarEstado();
+  cerrarEditBolson();
+  renderBolsones();
+  renderDashboard();
+  mostrarToast('✅ Bolsón actualizado');
+}
+
+function cerrarEditBolson(e) {
+  if (e && e.target !== document.getElementById('edit-bolson-overlay')) return;
+  document.getElementById('edit-bolson-overlay').style.display = 'none';
   document.body.style.overflow = '';
 }
 
@@ -4916,10 +5219,8 @@ window.addEventListener('load', () => {
 // Verificar sesión activa antes de mostrar el sistema
 verificarSesion();
 
+// cargarEstado es asíncrono — el render inicial se hace dentro del callback
 cargarEstado();
-poblarFiltros();
-renderDashboard();
-renderEstructura();
 </script>
 <!-- ══ MODAL EDITAR EGRESO ════════════════════════════════════════ -->
 <div id="edit-egreso-overlay" class="edit-modal-overlay" style="display:none" onclick="cerrarEditEgreso(event)">
@@ -4989,6 +5290,83 @@ renderEstructura();
     <div class="edit-modal-footer">
       <button class="btn btn-outline" onclick="cerrarEditEgreso()">Cancelar</button>
       <button class="btn btn-green" style="width:auto;padding:9px 24px" onclick="guardarEdicionEgreso()">💾 Guardar cambios</button>
+    </div>
+  </div>
+</div>
+<!-- ════════════════════════════════════════════════════════════════ -->
+
+<!-- ══ MODAL EDITAR BOLSÓN ═══════════════════════════════════════ -->
+<div id="edit-bolson-overlay" class="edit-modal-overlay" style="display:none" onclick="cerrarEditBolson(event)">
+  <div class="edit-modal" style="max-width:580px" onclick="event.stopPropagation()">
+    <div class="edit-modal-header">
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">✏️ Editar bolsón</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px" id="edit-bolson-subtitulo"></div>
+      </div>
+      <button class="edit-modal-close" onclick="cerrarEditBolson()">×</button>
+    </div>
+    <div class="edit-modal-body">
+      <input type="hidden" id="edit-bolson-id">
+
+      <div class="edit-section-title">Datos del bolsón</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Inquilino</label>
+          <select id="edit-bolson-inquilino">
+            <option value="JAVIER">JAVIER</option>
+            <option value="JAM&JAM">JAM&JAM</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Grano</label>
+          <select id="edit-bolson-grano">
+            <option value="Soja">Soja</option>
+            <option value="Maíz">Maíz</option>
+            <option value="Trigo">Trigo</option>
+            <option value="Sorgo">Sorgo</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Cosecha</label>
+          <input type="text" id="edit-bolson-cosecha" placeholder="Ej: 25/26" maxlength="15">
+        </div>
+        <div class="form-group">
+          <label>N° en campaña</label>
+          <input type="number" id="edit-bolson-num-campaña" min="1" placeholder="Ej: 3">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="edit-bolson-fecha">
+        </div>
+        <div class="form-group">
+          <label>Observaciones</label>
+          <input type="text" id="edit-bolson-obs" placeholder="Observaciones">
+        </div>
+      </div>
+
+      <div class="edit-section-title">Kilos ingresados totales</div>
+      <div style="background:var(--amber-bg);border:1px solid #FCD34D;border-radius:var(--radius);padding:9px 12px;margin-bottom:12px;font-size:12px;color:var(--amber)">
+        ⚠️ Cambiar los kilos ingresados ajusta también el movimiento de ingreso en el historial.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Kilos ingresados</label>
+          <input type="number" id="edit-bolson-ingresado" min="0">
+        </div>
+        <div class="form-group">
+          <label>Kilos egresados</label>
+          <input type="number" id="edit-bolson-egresado" min="0">
+        </div>
+      </div>
+      <div id="edit-bolson-alert" style="margin-top:10px"></div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="btn btn-outline" onclick="cerrarEditBolson()">Cancelar</button>
+      <button class="btn btn-green" style="width:auto;padding:9px 24px" onclick="guardarEdicionBolson()">💾 Guardar cambios</button>
     </div>
   </div>
 </div>
