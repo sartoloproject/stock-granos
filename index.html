@@ -924,16 +924,25 @@ tr:hover td{background:rgba(0,0,0,0.016)}
               <div class="step-num" id="step2-num">2</div>
               <div class="step-content">
                 <div class="step-title">Asignar origen del grano</div>
-                <div class="step-desc">Buscá los bolsones por N° y agregá los kilos que corresponden a cada uno</div>
+                <div class="step-desc">Seleccioná la cosecha y el N° de bolsón en esa campaña</div>
 
-                <!-- BÚSQUEDA POR N° BOLSÓN -->
+                <!-- BÚSQUEDA POR COSECHA + N° EN CAMPAÑA -->
                 <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:14px">
-                  <div class="form-group" style="max-width:200px;margin-bottom:0">
-                    <label>N° de bolsón</label>
-                    <input type="number" id="egr-busq-id" placeholder="Ej: 3" min="1"
-                      oninput="buscarBolsonParaEgreso(this.value)">
+                  <div class="form-grid" style="margin-bottom:0">
+                    <div class="form-group" style="margin-bottom:0">
+                      <label>Cosecha</label>
+                      <select id="egr-busq-cosecha" onchange="actualizarOpcionesBolsonEgr()">
+                        <option value="">— Seleccionar —</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                      <label>N° de bolsón en esa campaña</label>
+                      <select id="egr-busq-num" onchange="mostrarBolsonEgresoSeleccionado()" disabled>
+                        <option value="">— Primero elegí cosecha —</option>
+                      </select>
+                    </div>
                   </div>
-                  <div id="egr-busq-resultado" style="margin-top:10px"></div>
+                  <div id="egr-busq-resultado" style="margin-top:12px"></div>
                 </div>
 
                 <!-- BOLSONES SELECCIONADOS -->
@@ -1583,7 +1592,8 @@ async function procesarPDFconPDFjs(input) {
 
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
 
     // Extraer todo el texto de todas las páginas
     let textoCompleto = '';
@@ -1792,6 +1802,7 @@ function showSection(id, el) {
   if (id === 'dashboard') renderDashboard();
   if (id === 'bolsones') renderBolsones();
   if (id === 'movimientos') renderMovimientos();
+  if (id === 'egreso') poblarCosechasEgreso();
 }
 
 // ─── SELECTS ─────────────────────────────────────────────────────
@@ -1803,8 +1814,10 @@ function poblarFiltros() {
 }
 
 function filtrarCampos(prefix) {
-  const inq = document.getElementById(prefix+'-inquilino').value;
-  const sel = document.getElementById(prefix+'-campo');
+  const inqEl = document.getElementById(prefix+'-inquilino');
+  const sel   = document.getElementById(prefix+'-campo');
+  if (!inqEl || !sel) return; // elementos no existen en este modo
+  const inq = inqEl.value;
   sel.innerHTML = '<option value="">— ' + (prefix==='badd'?'Todos':'Seleccionar') + ' —</option>';
   Object.keys(CAMPOS).forEach(c => {
     if (!inq || CAMPOS[c].inquilino === inq) {
@@ -1813,7 +1826,11 @@ function filtrarCampos(prefix) {
   });
   const loteEl = document.getElementById(prefix+'-lote');
   if (loteEl) loteEl.innerHTML = '<option value="">— ' + (prefix==='badd'?'Todos':'Seleccionar') + ' —</option>';
-  if (prefix === 'egr') { bolsonSeleccionado = null; document.getElementById('bolson-wrap').style.display = 'none'; }
+  if (prefix === 'egr') {
+    bolsonSeleccionado = null;
+    const bw = document.getElementById('bolson-wrap');
+    if (bw) bw.style.display = 'none';
+  }
 }
 
 function actualizarLotes(prefix) {
@@ -1834,9 +1851,15 @@ function actualizarLotesYBolsones() {
 }
 
 function actualizarBolsones() {
-  const campo = document.getElementById('egr-campo').value;
-  const lote  = document.getElementById('egr-lote').value;
-  const grano = document.getElementById('egr-grano').value;
+  // egr-campo/lote/grano ya no existen en el nuevo flujo de búsqueda por N°
+  // Esta función se mantiene por compatibilidad pero sale si no encuentra los elementos
+  const campoEl = document.getElementById('egr-campo');
+  const loteEl  = document.getElementById('egr-lote');
+  const granoEl = document.getElementById('egr-grano');
+  if (!campoEl || !loteEl || !granoEl) return;
+  const campo = campoEl.value;
+  const lote  = loteEl.value;
+  const grano = granoEl.value;
   const wrap  = document.getElementById('bolson-wrap');
   const lista = document.getElementById('bolson-lista');
   if (!campo || !lote || !grano) { wrap.style.display='none'; return; }
@@ -1893,10 +1916,12 @@ function llenarFormulario(d) {
   // Reset bolsones seleccionados al cargar nueva CPE
   _egrBolsones = [];
   renderEgrBolsonesSeleccionados();
-  const busqId = document.getElementById('egr-busq-id');
-  if (busqId) { busqId.value = ''; }
-  const busqRes = document.getElementById('egr-busq-resultado');
-  if (busqRes) busqRes.innerHTML = '';
+  // Poblar selector de cosechas y resetear N°
+  poblarCosechasEgreso();
+  const numSel = document.getElementById('egr-busq-num');
+  if (numSel) { numSel.innerHTML = '<option value="">— Primero elegí cosecha —</option>'; numSel.disabled = true; }
+  const cont = document.getElementById('egr-busq-resultado');
+  if (cont) cont.innerHTML = '';
 
   set('egr-nro', d.nro_cpe);
   set('egr-fecha', d.fecha_descarga);
@@ -1908,8 +1933,10 @@ function llenarFormulario(d) {
     const map = {'soja':'Soja','maiz':'Maíz','maíz':'Maíz','trigo':'Trigo','sorgo':'Sorgo'};
     const v = map[d.grano.toLowerCase()] || d.grano;
     const sel = document.getElementById('egr-grano');
-    for (let o of sel.options) { if (o.value === v) { sel.value = v; break; } }
-    actualizarBolsones();
+    if (sel) {
+      for (let o of sel.options) { if (o.value === v) { sel.value = v; break; } }
+      actualizarBolsones();
+    }
   }
 }
 
@@ -2058,21 +2085,66 @@ function _camposResumenHTML(b) {
 }
 
 // ─── BÚSQUEDA DE BOLSÓN PARA EGRESO ─────────────────────────────
-function buscarBolsonParaEgreso(val) {
-  const id   = parseInt(val);
-  const cont = document.getElementById('egr-busq-resultado');
-  if (!id || id <= 0) { cont.innerHTML = ''; return; }
+// ─── BÚSQUEDA DE BOLSÓN PARA EGRESO (cosecha + N° campaña) ───────
+function poblarCosechasEgreso() {
+  const sel = document.getElementById('egr-busq-cosecha');
+  if (!sel) return;
+  // Obtener cosechas únicas de los bolsones con stock
+  const cosechas = [...new Set(
+    bolsones
+      .filter(b => (b.ingresado - b.egresado) > 0 && b.cosecha)
+      .map(b => b.cosecha)
+  )].sort().reverse();
+  sel.innerHTML = '<option value="">— Seleccionar cosecha —</option>' +
+    cosechas.map(c => `<option value="${c}">${c}</option>`).join('');
+  // Si hay una sola cosecha, la selecciona automáticamente
+  if (cosechas.length === 1) {
+    sel.value = cosechas[0];
+    actualizarOpcionesBolsonEgr();
+  }
+}
 
-  const b = bolsones.find(x => x.id === id);
-  if (!b) {
-    cont.innerHTML = `<div style="font-size:12px;color:var(--red);padding:6px 0">No se encontró el bolsón #${id}</div>`;
+function actualizarOpcionesBolsonEgr() {
+  const cosecha = document.getElementById('egr-busq-cosecha').value;
+  const numSel  = document.getElementById('egr-busq-num');
+  const cont    = document.getElementById('egr-busq-resultado');
+  cont.innerHTML = '';
+
+  if (!cosecha) {
+    numSel.innerHTML = '<option value="">— Primero elegí cosecha —</option>';
+    numSel.disabled  = true;
     return;
   }
-  const stock = b.ingresado - b.egresado;
-  if (stock <= 0) {
-    cont.innerHTML = `<div style="font-size:12px;color:var(--red);padding:6px 0">Bolsón #${id} sin stock disponible</div>`;
+
+  // Bolsones de esa cosecha con stock y numCampaña
+  const disponibles = bolsones.filter(b =>
+    b.cosecha === cosecha && (b.ingresado - b.egresado) > 0 && b.numCampaña
+  ).sort((a, b) => a.numCampaña - b.numCampaña);
+
+  if (!disponibles.length) {
+    numSel.innerHTML = '<option value="">Sin bolsones disponibles</option>';
+    numSel.disabled  = true;
     return;
   }
+
+  numSel.disabled  = false;
+  numSel.innerHTML = '<option value="">— N° de bolsón —</option>' +
+    disponibles.map(b => {
+      const stock   = b.ingresado - b.egresado;
+      const campoD  = _campoDisplay(b);
+      return `<option value="${b.id}">B${b.numCampaña} · ${b.grano} · ${campoD} · ${stock.toLocaleString('es-AR')} kg</option>`;
+    }).join('');
+}
+
+function mostrarBolsonEgresoSeleccionado() {
+  const bolsonId = parseInt(document.getElementById('egr-busq-num').value);
+  const cont     = document.getElementById('egr-busq-resultado');
+  if (!bolsonId) { cont.innerHTML = ''; return; }
+
+  const b = bolsones.find(x => x.id === bolsonId);
+  if (!b) { cont.innerHTML = ''; return; }
+
+  const stock  = b.ingresado - b.egresado;
   const tc     = 'tag-' + b.grano.toLowerCase().replace('í','i').replace('ó','o');
   const pct    = b.ingresado > 0 ? Math.round((stock / b.ingresado) * 100) : 0;
   const yaSel  = !!_egrBolsones.find(x => x.id === b.id);
@@ -2080,8 +2152,8 @@ function buscarBolsonParaEgreso(val) {
 
   cont.innerHTML = `<div class="bolson-card ${yaSel ? 'selected' : ''}" style="margin-top:0">
     <div class="bolson-left">
-      <div class="bolson-title">Bolsón #${b.id} — ${campoD} · Lotes ${_lotesLabel(b.lotes) || b.lote}</div>
-      <div class="bolson-meta">${b.inquilino}${b.cosecha?' · Cosecha '+b.cosecha:''} · <span class="tag ${tc}" style="font-size:10px">${b.grano}</span></div>
+      <div class="bolson-title">B${b.numCampaña} · Cosecha ${b.cosecha} — ${campoD} · Lotes ${_lotesLabel(b.lotes) || b.lote}</div>
+      <div class="bolson-meta">${b.inquilino} · <span class="tag ${tc}" style="font-size:10px">${b.grano}</span>${b.obs ? ' · ' + b.obs : ''}</div>
       <div class="progbar" style="margin-top:6px"><div class="progbar-fill" style="width:${pct}%"></div></div>
     </div>
     <div class="bolson-right" style="align-items:flex-end">
@@ -2101,16 +2173,14 @@ function agregarBolsonEgreso(bolsonId) {
   if (_egrBolsones.find(x => x.id === bolsonId)) return;
   _egrBolsones.push({ id: bolsonId, kg: 0 });
   renderEgrBolsonesSeleccionados();
-  // re-render la búsqueda para marcar como agregado
-  const inp = document.getElementById('egr-busq-id');
-  if (inp && inp.value) buscarBolsonParaEgreso(inp.value);
+  // Re-render la card para marcar como agregado
+  mostrarBolsonEgresoSeleccionado();
 }
 
 function eliminarBolsonEgreso(bolsonId) {
   _egrBolsones = _egrBolsones.filter(x => x.id !== bolsonId);
   renderEgrBolsonesSeleccionados();
-  const inp = document.getElementById('egr-busq-id');
-  if (inp && inp.value) buscarBolsonParaEgreso(inp.value);
+  mostrarBolsonEgresoSeleccionado();
 }
 
 function actualizarKgBolsonEgreso(bolsonId, kg) {
@@ -2867,20 +2937,13 @@ function cerrarCargasModal(e) {
 }
 
 function registrarEgreso() {
-  const nro      = document.getElementById('egr-nro').value;
-  const fecha    = document.getElementById('egr-fecha').value;
-  const inquilino= document.getElementById('egr-inquilino').value;
-  const campo    = document.getElementById('egr-campo').value;
-  const lote     = document.getElementById('egr-lote').value;
-  const grano    = document.getElementById('egr-grano').value;
-  const chofer   = document.getElementById('egr-chofer').value;
-  const dominios = document.getElementById('egr-dominios').value;
-  const destino  = document.getElementById('egr-destino').value;
+  const nro      = (document.getElementById('egr-nro')      || {}).value || '';
+  const fecha    = (document.getElementById('egr-fecha')    || {}).value || '';
+  const chofer   = (document.getElementById('egr-chofer')   || {}).value || '';
+  const dominios = (document.getElementById('egr-dominios') || {}).value || '';
+  const destino  = (document.getElementById('egr-destino')  || {}).value || '';
   const alertEl  = document.getElementById('egr-alert');
 
-  if (!inquilino || !campo || !grano) {
-    alertEl.innerHTML = '<div class="alert alert-danger">Completá inquilino, campo y grano.</div>'; return;
-  }
   if (!_egrBolsones.length) {
     alertEl.innerHTML = '<div class="alert alert-danger">Agregá al menos un bolsón de origen.</div>'; return;
   }
@@ -2888,6 +2951,13 @@ function registrarEgreso() {
   if (!bolsonesConKg.length) {
     alertEl.innerHTML = '<div class="alert alert-danger">Ingresá los kilos para cada bolsón seleccionado.</div>'; return;
   }
+
+  // Obtener inquilino, campo, lote y grano desde el primer bolsón seleccionado
+  const primerB  = bolsones.find(x => x.id === bolsonesConKg[0].id) || {};
+  const inquilino= primerB.inquilino || '';
+  const campo    = primerB.campo     || '';
+  const lote     = _lotesLabel(primerB.lotes) || primerB.lote || '';
+  const grano    = primerB.grano     || '';
 
   // Validar stock en cada bolsón
   for (const item of bolsonesConKg) {
@@ -3278,15 +3348,7 @@ function guardarEstado() {
 }
 
 function cargarEstado() {
-  // Función interna que hace el render completo tras cargar los datos
-  function _renderCompleto() {
-    poblarFiltros();
-    renderDashboard();
-    renderBolsones();
-    renderMovimientos();
-    renderEstructura();
-  }
-
+  // Intentar cargar desde Firebase primero; si no está listo, usar localStorage
   if (window._firebaseReady && window._fbGet) {
     mostrarToast('☁️ Cargando datos de la nube…');
     window._fbGet('stock_granos')
@@ -3304,23 +3366,26 @@ function cargarEstado() {
           if (d.cisterna)    cisterna    = d.cisterna;
           if (d.camposData)  { CAMPOS_DATA = d.camposData; CAMPOS = _rebuildCampos(); }
           if (d.nextBolsonPorCampaña) nextBolsonPorCampaña = d.nextBolsonPorCampaña;
+          if (d.camiones)    camiones    = d.camiones;
+          if (d.cisterna)    cisterna    = d.cisterna;
           deduplicarAcopios();
           mostrarToast('✅ Datos sincronizados');
         } else {
-          // Firebase vacío → migrar desde localStorage
+          // Firebase vacío → intentar migrar desde localStorage
           _cargarDesdeLocal();
           if (bolsones.length > 0 || movimientos.length > 0) {
-            guardarEstado();
+            guardarEstado(); // subir al cloud los datos locales existentes
             mostrarToast('☁️ Datos locales migrados a la nube');
           }
         }
-        _renderCompleto();
+        // Refrescar pantalla
+        renderDashboard(); renderBolsones(); renderMovimientos();
+        poblarFiltros();
       })
       .catch(err => {
         console.warn('No se pudo cargar desde Firebase:', err);
         _cargarDesdeLocal();
         mostrarToast('📴 Sin conexión — datos locales');
-        _renderCompleto();
       });
   } else {
     // Firebase aún no inicializado: esperar hasta 3 segundos
@@ -3334,7 +3399,6 @@ function cargarEstado() {
         clearInterval(esperar);
         _cargarDesdeLocal();
         mostrarToast('⚠️ Firebase no disponible — datos locales');
-        _renderCompleto();
       }
     }, 100);
   }
@@ -5219,8 +5283,10 @@ window.addEventListener('load', () => {
 // Verificar sesión activa antes de mostrar el sistema
 verificarSesion();
 
-// cargarEstado es asíncrono — el render inicial se hace dentro del callback
 cargarEstado();
+poblarFiltros();
+renderDashboard();
+renderEstructura();
 </script>
 <!-- ══ MODAL EDITAR EGRESO ════════════════════════════════════════ -->
 <div id="edit-egreso-overlay" class="edit-modal-overlay" style="display:none" onclick="cerrarEditEgreso(event)">
