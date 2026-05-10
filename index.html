@@ -3348,7 +3348,14 @@ function guardarEstado() {
 }
 
 function cargarEstado() {
-  // Intentar cargar desde Firebase primero; si no está listo, usar localStorage
+  function _renderCompleto() {
+    poblarFiltros();
+    renderDashboard();
+    renderBolsones();
+    renderMovimientos();
+    renderEstructura();
+  }
+
   if (window._firebaseReady && window._fbGet) {
     mostrarToast('☁️ Cargando datos de la nube…');
     window._fbGet('stock_granos')
@@ -3366,29 +3373,24 @@ function cargarEstado() {
           if (d.cisterna)    cisterna    = d.cisterna;
           if (d.camposData)  { CAMPOS_DATA = d.camposData; CAMPOS = _rebuildCampos(); }
           if (d.nextBolsonPorCampaña) nextBolsonPorCampaña = d.nextBolsonPorCampaña;
-          if (d.camiones)    camiones    = d.camiones;
-          if (d.cisterna)    cisterna    = d.cisterna;
           deduplicarAcopios();
           mostrarToast('✅ Datos sincronizados');
         } else {
-          // Firebase vacío → intentar migrar desde localStorage
           _cargarDesdeLocal();
           if (bolsones.length > 0 || movimientos.length > 0) {
-            guardarEstado(); // subir al cloud los datos locales existentes
+            guardarEstado();
             mostrarToast('☁️ Datos locales migrados a la nube');
           }
         }
-        // Refrescar pantalla
-        renderDashboard(); renderBolsones(); renderMovimientos();
-        poblarFiltros();
+        _renderCompleto();
       })
       .catch(err => {
         console.warn('No se pudo cargar desde Firebase:', err);
         _cargarDesdeLocal();
         mostrarToast('📴 Sin conexión — datos locales');
+        _renderCompleto();
       });
   } else {
-    // Firebase aún no inicializado: esperar hasta 3 segundos
     let intentos = 0;
     const esperar = setInterval(() => {
       intentos++;
@@ -3399,6 +3401,7 @@ function cargarEstado() {
         clearInterval(esperar);
         _cargarDesdeLocal();
         mostrarToast('⚠️ Firebase no disponible — datos locales');
+        _renderCompleto();
       }
     }, 100);
   }
@@ -5282,11 +5285,7 @@ window.addEventListener('load', () => {
 
 // Verificar sesión activa antes de mostrar el sistema
 verificarSesion();
-
-cargarEstado();
-poblarFiltros();
-renderDashboard();
-renderEstructura();
+cargarEstado(); // _renderCompleto() se llama internamente al terminar
 </script>
 <!-- ══ MODAL EDITAR EGRESO ════════════════════════════════════════ -->
 <div id="edit-egreso-overlay" class="edit-modal-overlay" style="display:none" onclick="cerrarEditEgreso(event)">
