@@ -3080,13 +3080,14 @@ function renderBolsones() {
         <div class="progbar" style="width:80px"><div class="progbar-fill" style="width:${pct}%"></div></div>
       </td>
       <td>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div style="display:flex;gap:4px;flex-wrap:wrap" id="accs-bolson-${b.id}">
           <button onclick="abrirEditarBolson(${b.id})" class="accion-btn accion-edit">✏️</button>
           <button onclick="verCargasDetalle(${b.id})"
             style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);
                    font-size:11px;cursor:pointer;color:var(--text2);font-family:var(--sans);white-space:nowrap">
             📦 ${nCargas}${nFotos > 0 ? ' · 📷' + nFotos : ''}
           </button>
+          <button onclick="confirmarEliminarBolson(${b.id})" class="accion-btn accion-del" title="Eliminar bolsón">🗑️</button>
         </div>
       </td>
     </tr>`;
@@ -4175,6 +4176,45 @@ function cerrarEditViaje(e) {
 }
 
 // ─── EDITAR BOLSÓN ───────────────────────────────────────────────
+// ─── ELIMINAR BOLSÓN ─────────────────────────────────────────────
+function confirmarEliminarBolson(bolsonId) {
+  const b = bolsones.find(x => x.id === bolsonId);
+  if (!b) return;
+  const cel = document.getElementById('accs-bolson-' + bolsonId);
+  if (!cel) return;
+  const num = b.numCampaña ? `B${b.numCampaña}` : `#${b.id}`;
+  cel.innerHTML = `
+    <div class="confirm-inline" style="flex-wrap:wrap;gap:4px">
+      <span style="font-size:11px;color:var(--red);font-weight:500">¿Eliminar ${num}?</span>
+      <button class="confirm-si" onclick="eliminarBolson(${bolsonId})">Sí, eliminar</button>
+      <button class="confirm-no" onclick="renderBolsones()">Cancelar</button>
+    </div>`;
+}
+
+function eliminarBolson(bolsonId) {
+  const idx = bolsones.findIndex(x => x.id === bolsonId);
+  if (idx === -1) { renderBolsones(); return; }
+  const b = bolsones[idx];
+
+  // Eliminar todos los movimientos asociados a este bolsón
+  const movEliminados = movimientos.filter(m => m.bolsonId === bolsonId).length;
+  movimientos = movimientos.filter(m => m.bolsonId !== bolsonId);
+
+  // Si tenía egresos multi-bolsón, revertir los que incluyen este bolsón
+  movimientos.forEach(m => {
+    if (m.bolsonIds) {
+      m.bolsonIds = m.bolsonIds.filter(x => x.id !== bolsonId);
+    }
+  });
+
+  bolsones.splice(idx, 1);
+  guardarEstado();
+  renderBolsones();
+  renderDashboard();
+  const num = b.numCampaña ? `B${b.numCampaña}` : `#${b.id}`;
+  mostrarToast(`🗑️ Bolsón ${num} eliminado${movEliminados ? ' y ' + movEliminados + ' movimiento(s) asociados' : ''}`);
+}
+
 function abrirEditarBolson(bolsonId) {
   const b = bolsones.find(x => x.id === bolsonId);
   if (!b) return;
