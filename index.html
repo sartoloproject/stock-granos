@@ -2066,20 +2066,34 @@ function _campoDisplay(b) {
 
 // HTML de resumen de campos/lotes para el modal
 function _camposResumenHTML(b) {
-  if (!b.lotes || !b.lotes.length) return '';
-  const porCampo = {};
-  b.lotes.forEach(l => {
-    const c = l.campo || b.campo || '—';
-    if (!porCampo[c]) porCampo[c] = [];
-    porCampo[c].push({ lote: l.lote, kilos: l.kilos });
-  });
+  // Sumar kilos reales por campo+lote desde TODAS las cargas
+  const porCampo = {}; // {campo: {lote: kg}}
+
+  function acum(lotes) {
+    (lotes || []).forEach(l => {
+      if (!l.campo || !l.lote || !(l.kilos > 0)) return;
+      if (!porCampo[l.campo]) porCampo[l.campo] = {};
+      porCampo[l.campo][l.lote] = (porCampo[l.campo][l.lote] || 0) + l.kilos;
+    });
+  }
+
+  if (b.cargas && b.cargas.length) {
+    b.cargas.forEach(c => acum(c.lotes));
+  } else {
+    acum(b.lotes);
+  }
+
+  if (!Object.keys(porCampo).length) return '';
+
   return Object.entries(porCampo).map(([campo, lotes]) => {
-    const totalCampo = lotes.reduce((s, l) => s + (l.kilos || 0), 0);
-    const detalle = lotes.map(l => `Lote ${l.lote}${l.kilos ? ': ' + l.kilos.toLocaleString('es-AR') + ' kg' : ''}`).join(' · ');
+    const totalCampo = Object.values(lotes).reduce((s, kg) => s + kg, 0);
+    const detalle = Object.entries(lotes)
+      .map(([lote, kg]) => `Lote ${lote}: ${kg.toLocaleString('es-AR')} kg`)
+      .join(' · ');
     return `<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)">
       <span class="badge-campo" style="font-size:11px">${campo}</span>
       <span style="color:var(--text2);margin-left:6px">${detalle}</span>
-      ${totalCampo ? `<span style="color:var(--green);font-weight:600;margin-left:6px">${totalCampo.toLocaleString('es-AR')} kg</span>` : ''}
+      <span style="color:var(--green);font-weight:600;margin-left:6px">${totalCampo.toLocaleString('es-AR')} kg total</span>
     </div>`;
   }).join('');
 }
@@ -3181,23 +3195,34 @@ function renderMovimientos() {
 function renderEstructura() {
   const cont = document.getElementById('campos-list');
 
-  // Calcular kilos ingresados por campo+lote agrupado por cosecha
+  // Calcular kilos reales por campo+lote sumando TODAS las cargas de cada bolsón
   const rindes = {}; // {campo: {loteNum: {cosecha: kg}}}
+
+  function acumularLotes(lotes, cosecha) {
+    (lotes || []).forEach(l => {
+      if (!l.campo || !l.lote || !(l.kilos > 0)) return;
+      if (!rindes[l.campo]) rindes[l.campo] = {};
+      if (!rindes[l.campo][l.lote]) rindes[l.campo][l.lote] = {};
+      rindes[l.campo][l.lote][cosecha] = (rindes[l.campo][l.lote][cosecha] || 0) + l.kilos;
+    });
+  }
+
   bolsones.forEach(b => {
     const cosecha = b.cosecha || 'Sin campaña';
-    (b.lotes || []).forEach(l => {
-      const c = l.campo || b.campo;
-      if (!rindes[c]) rindes[c] = {};
-      if (!rindes[c][l.lote]) rindes[c][l.lote] = {};
-      rindes[c][l.lote][cosecha] = (rindes[c][l.lote][cosecha] || 0) + (l.kilos || 0);
-    });
-    // Compatibilidad bolsones viejos sin lotes detallados
-    if (!b.lotes || !b.lotes.length) {
-      const c = b.campo; const ln = b.lote;
-      if (c && ln) {
-        if (!rindes[c]) rindes[c] = {};
-        if (!rindes[c][ln]) rindes[c][ln] = {};
-        rindes[c][ln][cosecha] = (rindes[c][ln][cosecha] || 0) + b.ingresado;
+    if (b.cargas && b.cargas.length) {
+      // Sumar kilos desde cada carga (fuente de verdad)
+      b.cargas.forEach(c => acumularLotes(c.lotes, cosecha));
+    } else {
+      // Compatibilidad: bolsones viejos sin cargas detalladas
+      acumularLotes(b.lotes, cosecha);
+      // Si no tiene lotes tampoco, usar el campo/lote genérico
+      if (!b.lotes || !b.lotes.length) {
+        const c = b.campo; const ln = b.lote;
+        if (c && ln) {
+          if (!rindes[c]) rindes[c] = {};
+          if (!rindes[c][ln]) rindes[c][ln] = {};
+          rindes[c][ln][cosecha] = (rindes[c][ln][cosecha] || 0) + b.ingresado;
+        }
       }
     }
   });
