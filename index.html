@@ -1548,7 +1548,7 @@ function _rebuildCampos() {
 let CAMPOS = _rebuildCampos();
 
 // Numeración de bolsones por campaña: { "25/26": 3, "24/25": 5, ... }
-let nextBolsonPorCampaña = {};
+let nextBolsonPorCampania = {};
 
 let bolsones = [], movimientos = [], nextBolson = 1, bolsonSeleccionado = null;
 let nextMovId = 1;
@@ -2267,17 +2267,17 @@ function registrarIngreso() {
 
   // Numeración por campaña: usar manual si se ingresó, si no auto-incrementar
   const campKey = cosecha || 'sin-campaña';
-  if (!nextBolsonPorCampaña[campKey]) nextBolsonPorCampaña[campKey] = 1;
+  if (!nextBolsonPorCampania[campKey]) nextBolsonPorCampania[campKey] = 1;
   const numManual = parseInt(document.getElementById('ing-num-campaña').value);
   let numEnCampaña;
   if (numManual && numManual > 0) {
     numEnCampaña = numManual;
     // Actualizar el contador si el manual es mayor al actual
-    if (numManual >= nextBolsonPorCampaña[campKey]) {
-      nextBolsonPorCampaña[campKey] = numManual + 1;
+    if (numManual >= nextBolsonPorCampania[campKey]) {
+      nextBolsonPorCampania[campKey] = numManual + 1;
     }
   } else {
-    numEnCampaña = nextBolsonPorCampaña[campKey]++;
+    numEnCampaña = nextBolsonPorCampania[campKey]++;
   }
 
   const primeraCarga = { fecha, kilos: totalKilos, obs, lotes: [...lotesValidos], fotos: [..._fotosReg._ingFotos] };
@@ -3342,7 +3342,7 @@ function guardarEstado() {
     localStorage.setItem('sg_camiones',    JSON.stringify(camiones));
     localStorage.setItem('sg_cisterna',    JSON.stringify(cisterna));
     localStorage.setItem('sg_camposData',  JSON.stringify(CAMPOS_DATA));
-    localStorage.setItem('sg_nextBolsonCampaña', JSON.stringify(nextBolsonPorCampaña));
+    localStorage.setItem('sg_nextBolsonCampania', JSON.stringify(nextBolsonPorCampania));
   } catch(e) { console.warn('localStorage no disponible:', e); }
 
   // 2) Guardar en Firebase
@@ -3351,7 +3351,7 @@ function guardarEstado() {
       bolsones, movimientos, nextBolson, nextMovId,
       acopios, choferes, pctSueldo, camiones, cisterna,
       camposData: CAMPOS_DATA,
-      nextBolsonPorCampaña,
+      nextBolsonPorCampania,
       ultimaActualizacion: new Date().toISOString()
     };
 
@@ -3395,7 +3395,7 @@ function cargarEstado() {
           if (d.camiones)    camiones    = d.camiones;
           if (d.cisterna)    cisterna    = d.cisterna;
           if (d.camposData)  { CAMPOS_DATA = d.camposData; CAMPOS = _rebuildCampos(); }
-          if (d.nextBolsonPorCampaña) nextBolsonPorCampaña = d.nextBolsonPorCampaña;
+          if (d.nextBolsonPorCampania) nextBolsonPorCampania = d.nextBolsonPorCampania;
           deduplicarAcopios();
           mostrarToast('✅ Datos sincronizados');
         } else {
@@ -3442,7 +3442,7 @@ function _cargarDesdeLocal() {
     const cam = localStorage.getItem('sg_camiones');
     const cist= localStorage.getItem('sg_cisterna');
     const cd  = localStorage.getItem('sg_camposData');
-    const nbc = localStorage.getItem('sg_nextBolsonCampaña');
+    const nbc = localStorage.getItem('sg_nextBolsonCampania');
     if (b)   bolsones    = JSON.parse(b);
     if (m)   movimientos = JSON.parse(m);
     if (n)   nextBolson  = parseInt(n);
@@ -3453,7 +3453,7 @@ function _cargarDesdeLocal() {
     if (cam) camiones    = JSON.parse(cam);
     if (cist)cisterna    = JSON.parse(cist);
     if (cd)  { CAMPOS_DATA = JSON.parse(cd); CAMPOS = _rebuildCampos(); }
-    if (nbc) nextBolsonPorCampaña = JSON.parse(nbc);
+    if (nbc) nextBolsonPorCampania = JSON.parse(nbc);
     deduplicarAcopios();
   } catch(e) { console.warn('No se pudo restaurar desde localStorage:', e); }
 }
@@ -4292,9 +4292,9 @@ function guardarEdicionBolson() {
   if (numCampañaManual && numCampañaManual > 0) {
     b.numCampaña = numCampañaManual;
     const campKey = cosecha || 'sin-campaña';
-    if (!nextBolsonPorCampaña[campKey]) nextBolsonPorCampaña[campKey] = 1;
-    if (numCampañaManual >= nextBolsonPorCampaña[campKey]) {
-      nextBolsonPorCampaña[campKey] = numCampañaManual + 1;
+    if (!nextBolsonPorCampania[campKey]) nextBolsonPorCampania[campKey] = 1;
+    if (numCampañaManual >= nextBolsonPorCampania[campKey]) {
+      nextBolsonPorCampania[campKey] = numCampañaManual + 1;
     }
   }
 
