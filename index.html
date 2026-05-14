@@ -3327,7 +3327,7 @@ function editarHaLote(campo, idx, val) {
 }
 
 // ─── PERSISTENCIA — Firebase (nube) + localStorage (respaldo local) ───
-let _guardandoFirebase = false;
+
 
 function guardarEstado() {
   // 1) Siempre guardar en localStorage como respaldo offline
@@ -3345,11 +3345,8 @@ function guardarEstado() {
     localStorage.setItem('sg_nextBolsonCampaña', JSON.stringify(nextBolsonPorCampaña));
   } catch(e) { console.warn('localStorage no disponible:', e); }
 
-  // 2) Guardar en Firebase si está disponible
+  // 2) Guardar en Firebase
   if (window._firebaseReady && window._fbSet) {
-    if (_guardandoFirebase) return; // evitar guardados simultáneos
-    _guardandoFirebase = true;
-
     const estado = {
       bolsones, movimientos, nextBolson, nextMovId,
       acopios, choferes, pctSueldo, camiones, cisterna,
@@ -3358,15 +3355,15 @@ function guardarEstado() {
       ultimaActualizacion: new Date().toISOString()
     };
 
+    console.log('💾 Guardando en Firebase...');
     window._fbSet('stock_granos', estado)
       .then(() => {
+        console.log('✅ Firebase OK');
         mostrarToast('☁️ Guardado en la nube');
-        _guardandoFirebase = false;
       })
       .catch(err => {
-        console.warn('Error al guardar en Firebase:', err);
+        console.error('❌ Error Firebase:', err);
         mostrarToast('💾 Guardado local (sin conexión)');
-        _guardandoFirebase = false;
       });
   } else {
     mostrarToast('💾 Guardado local');
