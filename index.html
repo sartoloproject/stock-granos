@@ -4,6 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stock de Granos — Gestión de Campo</title>
+<script>
+// Login inline — se define aquí para estar disponible apenas carga el HTML
+window._loginReady = false;
+function verificarPassword() {
+  // Si el script principal ya cargó, usar esa versión
+  if (window._loginReady && window._verificarPasswordMain) return window._verificarPasswordMain();
+  const input   = document.getElementById('login-input');
+  const errorEl = document.getElementById('login-error');
+  if (!input) return;
+  const pw = 'campo2526';
+  if (input.value === pw) {
+    const expira = Date.now() + (8 * 60 * 60 * 1000);
+    localStorage.setItem('sg_sesion', expira);
+    document.getElementById('login-screen').style.display = 'none';
+  } else {
+    input.classList.add('error');
+    errorEl.style.display = 'block';
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+    input.focus();
+  }
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
@@ -337,6 +360,7 @@ tr:hover td{background:rgba(0,0,0,0.016)}
 .fin-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bg3);font-size:13px}
 .fin-row:last-child{border-bottom:none}
 .fin-row-total{background:var(--green-light);padding:11px 13px;border-radius:var(--radius);margin-top:8px}
+.fin-row-indent{padding-left:14px;font-size:11px;opacity:.8}
 
 /* FLETES */
 .chofer-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:14px}
@@ -378,6 +402,22 @@ tr:hover td{background:rgba(0,0,0,0.016)}
 .config-field label{font-size:11px;color:var(--text3);font-weight:500}
 .config-field input{padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:var(--mono);background:var(--surface);color:var(--text);transition:border-color var(--dur) var(--ease)}
 .config-field input:focus{outline:none;border-color:var(--green)}
+
+/* ── COSTOS FIJOS TABLE ─────────────────────────────────────────── */
+.cf-table{width:100%;border-collapse:collapse;font-size:12px}
+.cf-table th{background:var(--bg2);padding:8px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--border)}
+.cf-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.cf-table tr:last-child td{border-bottom:none}
+.cf-table tr:hover td{background:var(--bg2)}
+.cf-table .num-col{text-align:right;font-family:var(--mono);color:var(--text2)}
+.cf-table .num-col.green{color:var(--green);font-weight:600}
+.cf-table input.cf-input{width:100%;padding:4px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text)}
+.cf-table input.cf-input:focus{outline:none;border-color:var(--green)}
+.cf-table input.cf-imp{font-family:var(--mono);width:110px;text-align:right}
+.cf-table input.cf-cant{width:50px;text-align:center;font-family:var(--mono)}
+.cf-table select.cf-unidad{padding:4px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;background:var(--surface);color:var(--text)}
+.cf-total-row td{background:var(--green-light)!important;font-weight:700;color:var(--green);border-top:2px solid var(--green)}
+.cf-add-row{display:flex;gap:8px;align-items:center;padding:10px 0;flex-wrap:wrap}
 .config-section-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px}
 .costo-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bg3);font-size:13px}
 .costo-row:last-child{border-bottom:none}
@@ -660,7 +700,7 @@ tr:hover td{background:rgba(0,0,0,0.016)}
       <div class="card">
         <div class="card-header"><span class="card-title">Stock por campo</span></div>
         <table>
-          <thead><tr><th>Campo</th><th>Inquilino</th><th>Soja (kg)</th><th>Maíz (kg)</th><th>Trigo (kg)</th><th>Sorgo (kg)</th><th>Total (kg)</th></tr></thead>
+          <thead><tr><th>Ubicación</th><th>Inquilino</th><th>Soja (kg)</th><th>Maíz (kg)</th><th>Trigo (kg)</th><th>Sorgo (kg)</th><th>Total (kg)</th></tr></thead>
           <tbody id="tbody-dashboard"></tbody>
         </table>
       </div>
@@ -688,7 +728,7 @@ tr:hover td{background:rgba(0,0,0,0.016)}
       </div>
       <div class="card">
         <table>
-          <thead><tr><th>#</th><th>Campo</th><th>Inquilino</th><th>Lote</th><th>Grano</th><th>Cosecha</th><th>Ingresado</th><th>Egresado</th><th>Stock</th><th>%</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Ubicación</th><th>Campo</th><th>Inquilino</th><th>Lote</th><th>Grano</th><th>Cosecha</th><th>Ingresado</th><th>Egresado</th><th>Stock</th><th>%</th><th></th></tr></thead>
           <tbody id="tbody-bolsones"></tbody>
         </table>
       </div>
@@ -744,13 +784,19 @@ tr:hover td{background:rgba(0,0,0,0.016)}
             </div>
             <div class="form-grid">
               <div class="form-group">
+                <label>Ubicación del bolsón <span style="font-size:11px;color:var(--text3);font-weight:400">— campo donde está físicamente</span></label>
+                <select id="ing-ubicacion">
+                  <option value="">— Seleccionar campo —</option>
+                </select>
+              </div>
+              <div class="form-group">
                 <label>Fecha</label>
                 <input type="date" id="ing-fecha">
               </div>
-              <div class="form-group">
-                <label>Observaciones (opcional)</label>
-                <input type="text" id="ing-obs" placeholder="Ej: Cosecha lote norte">
-              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label>Observaciones (opcional)</label>
+              <input type="text" id="ing-obs" placeholder="Ej: Cosecha lote norte">
             </div>
 
             <!-- MULTI-LOTE BUILDER (con campo propio por fila) -->
@@ -784,8 +830,9 @@ tr:hover td{background:rgba(0,0,0,0.016)}
             <!-- BÚSQUEDA -->
             <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:16px">
               <div class="section-label" style="margin-bottom:10px">Buscar bolsón</div>
-              <div style="display:flex;gap:8px;margin-bottom:14px">
+              <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
                 <button class="btn btn-outline busq-tab active" id="btab-id" onclick="switchBusqueda('id')">Por N° bolsón</button>
+                <button class="btn btn-outline busq-tab" id="btab-ubicacion" onclick="switchBusqueda('ubicacion')">Por ubicación</button>
                 <button class="btn btn-outline busq-tab" id="btab-filtro" onclick="switchBusqueda('filtro')">Por campo / lote</button>
               </div>
 
@@ -798,7 +845,27 @@ tr:hover td{background:rgba(0,0,0,0.016)}
                 </div>
               </div>
 
-              <!-- Buscar por filtro -->
+              <!-- Buscar por ubicación -->
+              <div id="busq-ubicacion-panel" style="display:none">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Ubicación</label>
+                    <select id="badd-ubicacion" onchange="buscarBolsonPorUbicacion()">
+                      <option value="">— Todos los campos —</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Grano</label>
+                    <select id="badd-ubicacion-grano" onchange="buscarBolsonPorUbicacion()">
+                      <option value="">— Todos —</option>
+                      <option value="Soja">Soja</option><option value="Maíz">Maíz</option>
+                      <option value="Trigo">Trigo</option><option value="Sorgo">Sorgo</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Buscar por filtro campo/lote -->
               <div id="busq-filtro-panel" style="display:none">
                 <div class="form-grid">
                   <div class="form-group">
@@ -810,7 +877,7 @@ tr:hover td{background:rgba(0,0,0,0.016)}
                     </select>
                   </div>
                   <div class="form-group">
-                    <label>Campo</label>
+                    <label>Campo del grano</label>
                     <select id="badd-campo" onchange="actualizarLotes('badd');buscarBolsonPorFiltro()">
                       <option value="">— Todos —</option>
                     </select>
@@ -928,19 +995,25 @@ tr:hover td{background:rgba(0,0,0,0.016)}
 
                 <!-- BÚSQUEDA POR COSECHA + N° EN CAMPAÑA -->
                 <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:14px">
-                  <div class="form-grid" style="margin-bottom:0">
+                  <div class="form-grid" style="margin-bottom:10px">
                     <div class="form-group" style="margin-bottom:0">
                       <label>Cosecha</label>
-                      <select id="egr-busq-cosecha" onchange="actualizarOpcionesBolsonEgr()">
+                      <select id="egr-busq-cosecha" onchange="actualizarUbicacionesEgr()">
                         <option value="">— Seleccionar —</option>
                       </select>
                     </div>
                     <div class="form-group" style="margin-bottom:0">
-                      <label>N° de bolsón en esa campaña</label>
-                      <select id="egr-busq-num" onchange="mostrarBolsonEgresoSeleccionado()" disabled>
+                      <label>Ubicación</label>
+                      <select id="egr-busq-ubicacion" onchange="actualizarOpcionesBolsonEgr()" disabled>
                         <option value="">— Primero elegí cosecha —</option>
                       </select>
                     </div>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0">
+                    <label>N° de bolsón en esa campaña</label>
+                    <select id="egr-busq-num" onchange="mostrarBolsonEgresoSeleccionado()" disabled>
+                      <option value="">— Elegí cosecha y ubicación —</option>
+                    </select>
                   </div>
                   <div id="egr-busq-resultado" style="margin-top:12px"></div>
                 </div>
@@ -1020,7 +1093,21 @@ tr:hover td{background:rgba(0,0,0,0.016)}
           <div class="page-title">Cuentas por acopio</div>
           <div class="page-sub" id="acopio-page-sub">Stock depositado por cooperativa / acopio</div>
         </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline" style="font-size:12px;padding:7px 14px;display:flex;align-items:center;gap:6px"
+            onclick="abrirModalCampaniaPDF('liquidacion')">
+            📋 Cargar Liquidación
+          </button>
+          <button class="btn btn-outline" style="font-size:12px;padding:7px 14px;display:flex;align-items:center;gap:6px"
+            onclick="abrirModalCampaniaPDF('certificacion')">
+            📄 Cargar Certificación
+          </button>
+          <!-- file inputs ocultos, activados desde el modal -->
+          <input type="file" id="global-liq-input"  accept=".pdf" style="display:none" onchange="procesarPDFGlobal(this,'liquidacion')">
+          <input type="file" id="global-cert-input" accept=".pdf" style="display:none" onchange="procesarPDFGlobal(this,'certificacion')">
+        </div>
       </div>
+      <div id="global-pdf-status" style="margin-bottom:12px"></div>
 
       <!-- LISTA DE ACOPIOS -->
       <div id="acopio-lista-view">
@@ -1038,11 +1125,20 @@ tr:hover td{background:rgba(0,0,0,0.016)}
           </div>
         </div>
 
+        <!-- Filtro campaña -->
+        <div id="det-campania-filter-wrap" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Campaña:</span>
+          <div id="det-campania-pills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+
         <div class="metrics-grid" id="det-metricas" style="margin-bottom:16px"></div>
 
         <!-- Tabla cuenta corriente -->
         <div class="card" style="margin-bottom:16px">
-          <div class="card-header"><span class="card-title">Cuenta corriente de kg</span></div>
+          <div class="card-header">
+            <span class="card-title">Cuenta corriente de kg</span>
+            <span id="det-campania-badge" style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:10px;background:var(--blue-bg);color:var(--blue);display:none"></span>
+          </div>
           <table>
             <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Grano</th><th class="num">Kg mov.</th><th class="num">Saldo kg</th><th></th></tr></thead>
             <tbody id="det-tbody"></tbody>
@@ -1055,34 +1151,19 @@ tr:hover td{background:rgba(0,0,0,0.016)}
           <div id="det-financiero-content" style="padding:16px 20px"></div>
         </div>
 
-        <!-- Upload Liquidación -->
-        <div class="card" style="margin-bottom:12px">
-          <div class="card-body">
-            <div class="step-title">Cargar Liquidación Primaria <span class="ia-pill" style="background:#D8EDDF;color:#2D6A4F">PDF</span></div>
-            <div class="step-desc">Subí el PDF de Liquidación Primaria de Granos (C1116A) para registrar la venta</div>
-            <div class="pdf-drop" id="liq-drop" onclick="document.getElementById('liq-input').click()" style="margin-top:10px">
-              <div class="pdf-drop-icon">📋</div>
-              <div class="pdf-drop-title">Seleccionar Liquidación</div>
-              <div class="pdf-drop-sub">Liquidación Primaria de Granos · C1116A</div>
-            </div>
-            <input type="file" id="liq-input" accept=".pdf" style="display:none" onchange="procesarPDFLiquidacion(this)">
-            <div id="liq-status" style="margin-top:8px"></div>
-          </div>
+        <!-- Resumen financiero certificaciones -->
+        <div class="card" id="det-financiero-cert" style="margin-bottom:16px;display:none">
+          <div class="card-header"><span class="card-title">Resumen financiero de certificaciones</span></div>
+          <div id="det-financiero-cert-content" style="padding:16px 20px"></div>
         </div>
 
-        <!-- Upload Certificación -->
-        <div class="card">
-          <div class="card-body">
-            <div class="step-title">Cargar Certificación Electrónica <span class="ia-pill" style="background:#D8EDDF;color:#2D6A4F">PDF</span></div>
-            <div class="step-desc">Subí la certificación para registrar mermas por calidad / zarandeo</div>
-            <div class="pdf-drop" id="cert-drop" onclick="document.getElementById('cert-input').click()" style="margin-top:10px">
-              <div class="pdf-drop-icon">📄</div>
-              <div class="pdf-drop-title">Seleccionar Certificación Electrónica</div>
-              <div class="pdf-drop-sub">Certificación Electrónica de Granos</div>
-            </div>
-            <input type="file" id="cert-input" accept=".pdf" style="display:none" onchange="procesarPDFCertificacion(this)">
-            <div id="cert-status" style="margin-top:8px"></div>
+        <!-- Historial por cosecha -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header">
+            <span class="card-title">📂 Historial por cosecha</span>
+            <span style="font-size:11px;color:var(--text3)">Liquidaciones y certificaciones agrupadas</span>
           </div>
+          <div id="det-historial-cosecha" style="padding:14px 18px"></div>
         </div>
       </div>
     </div>
@@ -1133,7 +1214,10 @@ tr:hover td{background:rgba(0,0,0,0.016)}
         <!-- Config tarifa del chofer -->
         <div class="card" style="margin-bottom:14px">
           <div class="card-body" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-            <span style="font-size:13px;font-weight:600">Tarifa de este chofer:</span>
+            <div>
+              <span style="font-size:13px;font-weight:600">Tarifa de este chofer:</span>
+              <span id="tarifa-mes-label" style="font-size:11px;color:var(--text3);margin-left:4px"></span>
+            </div>
             <div style="display:flex;align-items:center;gap:6px">
               <span style="font-size:13px;color:var(--text2)">$</span>
               <input type="number" id="tarifa-chofer-input" min="0" step="1" placeholder="0"
@@ -1142,6 +1226,7 @@ tr:hover td{background:rgba(0,0,0,0.016)}
               <span style="font-size:13px;color:var(--text2)">/ kg</span>
             </div>
             <button onclick="recalcularViajes()" style="padding:6px 14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--sans)">Recalcular</button>
+            <span style="font-size:11px;color:var(--text3)">Solo afecta al mes seleccionado</span>
           </div>
         </div>
 
@@ -1244,17 +1329,15 @@ tr:hover td{background:rgba(0,0,0,0.016)}
             <div class="card-body">
               <div style="font-size:13px;font-weight:600;margin-bottom:12px">Datos del mes</div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-                <div class="config-field" style="width:130px">
-                  <label>Km recorridos</label>
+                <div class="config-field" style="width:180px">
+                  <label>Km recorridos <span id="cam-km-badge"></span></label>
                   <input type="number" id="cam-km-mes" placeholder="0" min="0" onchange="guardarDatosMes()">
+                  <span id="cam-km-hint" style="font-size:10px;color:var(--text3);margin-top:2px;display:block"></span>
                 </div>
-                <div class="config-field" style="width:120px">
-                  <label>Litros combustible</label>
+                <div class="config-field" style="width:160px">
+                  <label>Litros combustible <span id="cam-litros-badge"></span></label>
                   <input type="number" id="cam-litros-mes" placeholder="0" min="0" onchange="guardarDatosMes()">
-                </div>
-                <div class="config-field" style="width:130px">
-                  <label>Precio litro ($)</label>
-                  <input type="number" id="cam-precio-litro" placeholder="0" min="0" onchange="guardarDatosMes()">
+                  <span id="cam-litros-hint" style="font-size:10px;color:var(--text3);margin-top:2px;display:block"></span>
                 </div>
                 <div class="config-field" style="width:180px">
                   <label>Sueldo chofer ($) <span id="cam-sueldo-badge" style="font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;margin-left:4px"></span></label>
@@ -1299,35 +1382,77 @@ tr:hover td{background:rgba(0,0,0,0.016)}
         <div id="cam-panel-config" style="display:none">
           <div class="card">
             <div class="card-body">
-              <div class="config-section-title">Costos fijos mensuales</div>
-              <div class="config-grid">
-                <div class="config-field"><label>Impuesto provincial ($)</label><input type="number" id="cfg-imp-prov" placeholder="0" min="0" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Impuesto municipal ($)</label><input type="number" id="cfg-imp-mun" placeholder="0" min="0" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Seguro camión ($)</label><input type="number" id="cfg-seg-cam" placeholder="0" min="0" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Seguro acoplado ($)</label><input type="number" id="cfg-seg-acop" placeholder="0" min="0" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Seguro de carga ($)</label><input type="number" id="cfg-seg-carga" placeholder="0" min="0" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Seguro ART chofer ($)</label><input type="number" id="cfg-seg-art" placeholder="0" min="0" onchange="guardarConfig()"></div>
-              </div>
+              <div class="config-section-title" style="margin-bottom:12px">Costos fijos mensuales</div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:14px">No varían con los km recorridos. Se calculan automáticamente por mes.</div>
 
-              <div class="config-section-title">Neumáticos — costo por km</div>
-              <div class="config-grid">
-                <div class="config-field"><label>Precio neumático camión ($)</label><input type="number" id="cfg-neu-cam-precio" placeholder="0" min="0" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Vida útil neumático camión (km)</label><input type="number" id="cfg-neu-cam-vida" placeholder="80000" min="1" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Cantidad neumáticos camión</label><input type="number" id="cfg-neu-cam-cant" placeholder="10" min="1" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Precio neumático acoplado ($)</label><input type="number" id="cfg-neu-acop-precio" placeholder="0" min="0" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Vida útil neumático acoplado (km)</label><input type="number" id="cfg-neu-acop-vida" placeholder="80000" min="1" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Cantidad neumáticos acoplado (3 ejes)</label><input type="number" id="cfg-neu-acop-cant" placeholder="12" min="1" onchange="guardarConfig()"></div>
-              </div>
+              <!-- TABLA COSTOS FIJOS -->
+              <div id="cfg-fijos-tabla"></div>
 
-              <div class="config-section-title">Aceite de motor — costo por km</div>
-              <div class="config-grid">
-                <div class="config-field"><label>Litros de aceite por cambio</label><input type="number" id="cfg-aceite-litros" placeholder="20" min="1" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Precio litro aceite ($)</label><input type="number" id="cfg-aceite-precio" placeholder="0" min="0" onchange="guardarConfig()"></div>
-                <div class="config-field"><label>Cada cuántos km se cambia</label><input type="number" id="cfg-aceite-km" placeholder="15000" min="1" onchange="guardarConfig()"></div>
+              <!-- FILA AGREGAR -->
+              <div class="cf-add-row" style="margin-top:8px;padding:10px;background:var(--bg2);border-radius:var(--radius);border:1px dashed var(--border2)">
+                <input type="text" id="cfg-new-concepto" placeholder="Ej: Patente adicional" class="cf-input" style="flex:1;min-width:160px;padding:6px 8px">
+                <input type="number" id="cfg-new-cant" placeholder="1" class="cf-cant" style="width:55px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px">
+                <select id="cfg-new-unidad" class="cf-unidad">
+                  <option value="mes">mes</option>
+                  <option value="año">año</option>
+                </select>
+                <input type="number" id="cfg-new-importe" placeholder="Importe $" class="cf-imp" style="width:120px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)">
+                <button class="btn btn-green" style="width:auto;padding:6px 16px;font-size:12px" onclick="agregarCostoFijo()">+ Agregar</button>
               </div>
 
               <div style="margin-top:14px;padding:10px 14px;background:var(--green-light);border-radius:var(--radius);font-size:12px;color:var(--green)">
-                💡 Los cambios se guardan automáticamente y se aplican al recalcular el mes.
+                💡 El $/km y $/tonelada se calculan automáticamente con los km y toneladas del mes actual.
+              </div>
+            </div>
+          </div>
+
+          <!-- NEUMÁTICOS Y ACEITE → reemplazados por costos variables -->
+          <div class="card" style="margin-top:12px">
+            <div class="card-body">
+
+              <!-- CUBIERTAS -->
+              <div class="config-section-title">Cubiertas — costo por km</div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Fórmula: Costo/mes = (Precio × Cantidad) ÷ Vida útil (km) × Km recorridos/mes</div>
+              <div id="cfg-cubiertas-tabla"></div>
+              <div class="cf-add-row" style="margin-top:8px;padding:10px;background:var(--bg2);border-radius:var(--radius);border:1px dashed var(--border2)">
+                <input type="text" id="cfg-new-cub-nombre" placeholder="Ej: Direccional acoplado" class="cf-input" style="flex:1;min-width:140px;padding:6px 8px">
+                <input type="number" id="cfg-new-cub-cant" placeholder="Cant" class="cf-cant" style="width:55px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px">
+                <input type="number" id="cfg-new-cub-precio" placeholder="Precio $" class="cf-imp" style="width:110px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)">
+                <input type="number" id="cfg-new-cub-vida" placeholder="Vida útil km" style="width:110px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)">
+                <button class="btn btn-green" style="width:auto;padding:6px 14px;font-size:12px" onclick="agregarVariable('cubiertas')">+ Agregar</button>
+              </div>
+
+              <!-- GASOIL -->
+              <div class="config-section-title" style="margin-top:18px">Gasoil</div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Fórmula: Costo/mes = Km/mes × (Consumo lts/100km ÷ 100) × Precio por litro</div>
+              <div id="cfg-gasoil-tabla"></div>
+
+              <!-- ACEITES -->
+              <div class="config-section-title" style="margin-top:18px">Aceites y lubricantes</div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Fórmula: Costo/mes = (Precio × Capacidad) ÷ Vida útil (km) × Km recorridos/mes</div>
+              <div id="cfg-aceites-tabla"></div>
+              <div class="cf-add-row" style="margin-top:8px;padding:10px;background:var(--bg2);border-radius:var(--radius);border:1px dashed var(--border2)">
+                <input type="text" id="cfg-new-ace-nombre" placeholder="Ej: Aceite dirección" class="cf-input" style="flex:1;min-width:140px;padding:6px 8px">
+                <input type="number" id="cfg-new-ace-cap" placeholder="Capacidad L" style="width:100px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)">
+                <input type="number" id="cfg-new-ace-precio" placeholder="Precio $/L" class="cf-imp" style="width:100px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)">
+                <input type="number" id="cfg-new-ace-vida" placeholder="Vida útil km" style="width:110px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)">
+                <button class="btn btn-green" style="width:auto;padding:6px 14px;font-size:12px" onclick="agregarVariable('aceites')">+ Agregar</button>
+              </div>
+
+              <!-- FILTROS -->
+              <div class="config-section-title" style="margin-top:18px">Filtros</div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Fórmula: Costo/mes = (Precio × Cantidad) ÷ Vida útil (km) × Km recorridos/mes</div>
+              <div id="cfg-filtros-tabla"></div>
+              <div class="cf-add-row" style="margin-top:8px;padding:10px;background:var(--bg2);border-radius:var(--radius);border:1px dashed var(--border2)">
+                <input type="text" id="cfg-new-fil-nombre" placeholder="Ej: Filtro de cabina" class="cf-input" style="flex:1;min-width:140px;padding:6px 8px">
+                <input type="number" id="cfg-new-fil-cant" placeholder="Cant" class="cf-cant" style="width:55px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px">
+                <input type="number" id="cfg-new-fil-precio" placeholder="Precio $" class="cf-imp" style="width:110px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)">
+                <input type="number" id="cfg-new-fil-vida" placeholder="Vida útil km" style="width:110px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)">
+                <button class="btn btn-green" style="width:auto;padding:6px 14px;font-size:12px" onclick="agregarVariable('filtros')">+ Agregar</button>
+              </div>
+
+              <div style="margin-top:14px;padding:10px 14px;background:var(--green-light);border-radius:var(--radius);font-size:12px;color:var(--green)">
+                💡 El costo/mes y $/km se calculan automáticamente con los km del mes actual.
               </div>
             </div>
           </div>
@@ -1481,13 +1606,24 @@ tr:hover td{background:rgba(0,0,0,0.016)}
                   <option value="flete">Flete (camión)</option>
                   <option value="cosecha">Maquinaria agrícola</option>
                   <option value="otro">Otro</option>
+                  <option value="custom">Otra actividad...</option>
                 </select>
               </div>
+              <div class="config-field" id="ret-custom-act-wrap" style="display:none">
+                <label>Nombre de la actividad</label>
+                <input type="text" id="ret-custom-act" placeholder="Ej: Riego, Transporte propio..." style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text);font-family:var(--sans);width:100%">
+              </div>
               <div class="config-field">
-                <label>Equipo / Patente</label>
-                <select id="ret-equipo" style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text);font-family:var(--sans)">
-                  <option value="">— Seleccionar —</option>
-                </select>
+                <label style="display:flex;justify-content:space-between;align-items:center">
+                  Equipo / Patente
+                  <button type="button" id="ret-gestionar-equipos" style="display:none;align-items:center;gap:4px;padding:2px 10px;font-size:11px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue);border-radius:4px;cursor:pointer;font-family:var(--sans)">⚙️ Gestionar</button>
+                </label>
+                <div id="ret-equipo-wrap">
+                  <select id="ret-equipo" style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text);font-family:var(--sans);width:100%">
+                    <option value="">— Seleccionar —</option>
+                  </select>
+                </div>
+                <input type="text" id="ret-equipo-custom" placeholder="Ej: Equipo propio, ABC123..." style="display:none;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text);font-family:var(--sans);width:100%">
               </div>
             </div>
             <div class="config-field" style="margin-bottom:14px">
@@ -1530,10 +1666,10 @@ tr:hover td{background:rgba(0,0,0,0.016)}
 // CAMPOS es editable en runtime — se guarda en Firebase también
 // Estructura: { "HORACIO": { inquilino, lotes: [{num, ha}] } }
 let CAMPOS_DATA = {
-  "HORACIO":        { inquilino: "JAVIER",  lotes: [{num:1,ha:0},{num:2,ha:0}] },
-  "DURAZNILLO":     { inquilino: "JAM&JAM", lotes: [{num:1,ha:0},{num:4,ha:0},{num:5,ha:0},{num:6,ha:0}] },
-  "LOS QUEBRACHOS": { inquilino: "JAVIER",  lotes: [{num:1,ha:0},{num:2,ha:0},{num:4,ha:0}] },
-  "TONY":           { inquilino: "JAVIER",  lotes: [{num:1,ha:0},{num:2,ha:0}] }
+  "HORACIO":        { inquilino: "JAVIER",  lotes: [{num:1,ha_por_campania:{}},{num:2,ha_por_campania:{}}] },
+  "DURAZNILLO":     { inquilino: "JAM&JAM", lotes: [{num:1,ha_por_campania:{}},{num:4,ha_por_campania:{}},{num:5,ha_por_campania:{}},{num:6,ha_por_campania:{}}] },
+  "LOS QUEBRACHOS": { inquilino: "JAVIER",  lotes: [{num:1,ha_por_campania:{}},{num:2,ha_por_campania:{}},{num:4,ha_por_campania:{}}] },
+  "TONY":           { inquilino: "JAVIER",  lotes: [{num:1,ha_por_campania:{}},{num:2,ha_por_campania:{}}] }
 };
 
 // CAMPOS sigue siendo el objeto de compatibilidad (lotes como array de números)
@@ -1556,7 +1692,7 @@ let acopios = {}, ultimaCPE = null, acopioActual = null;
 let choferes = {}, choferActual = null, mesActualFletes = null, pctSueldo = 18;
 let camiones = {}, camionActual = null, mesActualCam = null;
 // cisterna: { lotes:[{id,fecha,litros_total,litros_disp,precio_litro,proveedor,remito}], movimientos:[...] }
-let cisterna = { lotes: [], movimientos: [] };
+let cisterna = { lotes: [], movimientos: [], equipos_cosecha: [], equipos_flete_extra: [] };
 
 // Fotos de ingreso (arrays temporales, se resetean al guardar)
 const _fotosReg = {
@@ -1811,6 +1947,12 @@ function poblarFiltros() {
   Object.keys(CAMPOS).forEach(c => {
     const o = document.createElement('option'); o.value = c; o.textContent = c; fc.appendChild(o);
   });
+  // Poblar selector de ubicación en ingreso
+  const ingUbic = document.getElementById('ing-ubicacion');
+  if (ingUbic) {
+    ingUbic.innerHTML = '<option value="">— Seleccionar campo —</option>' +
+      Object.keys(CAMPOS_DATA).map(c => `<option value="${c}">${c}</option>`).join('');
+  }
 }
 
 function filtrarCampos(prefix) {
@@ -1918,8 +2060,10 @@ function llenarFormulario(d) {
   renderEgrBolsonesSeleccionados();
   // Poblar selector de cosechas y resetear N°
   poblarCosechasEgreso();
+  const ubSel = document.getElementById('egr-busq-ubicacion');
+  if (ubSel) { ubSel.innerHTML = '<option value="">— Primero elegí cosecha —</option>'; ubSel.disabled = true; }
   const numSel = document.getElementById('egr-busq-num');
-  if (numSel) { numSel.innerHTML = '<option value="">— Primero elegí cosecha —</option>'; numSel.disabled = true; }
+  if (numSel) { numSel.innerHTML = '<option value="">— Elegí cosecha y ubicación —</option>'; numSel.disabled = true; }
   const cont = document.getElementById('egr-busq-resultado');
   if (cont) cont.innerHTML = '';
 
@@ -2099,11 +2243,10 @@ function _camposResumenHTML(b) {
 }
 
 // ─── BÚSQUEDA DE BOLSÓN PARA EGRESO ─────────────────────────────
-// ─── BÚSQUEDA DE BOLSÓN PARA EGRESO (cosecha + N° campaña) ───────
+// ─── BÚSQUEDA DE BOLSÓN PARA EGRESO (cosecha → ubicación → N°) ───
 function poblarCosechasEgreso() {
   const sel = document.getElementById('egr-busq-cosecha');
   if (!sel) return;
-  // Obtener cosechas únicas de los bolsones con stock
   const cosechas = [...new Set(
     bolsones
       .filter(b => (b.ingresado - b.egresado) > 0 && b.cosecha)
@@ -2111,28 +2254,59 @@ function poblarCosechasEgreso() {
   )].sort().reverse();
   sel.innerHTML = '<option value="">— Seleccionar cosecha —</option>' +
     cosechas.map(c => `<option value="${c}">${c}</option>`).join('');
-  // Si hay una sola cosecha, la selecciona automáticamente
-  if (cosechas.length === 1) {
-    sel.value = cosechas[0];
-    actualizarOpcionesBolsonEgr();
+  if (cosechas.length === 1) { sel.value = cosechas[0]; actualizarUbicacionesEgr(); }
+}
+
+function actualizarUbicacionesEgr() {
+  const cosecha  = document.getElementById('egr-busq-cosecha').value;
+  const ubSel    = document.getElementById('egr-busq-ubicacion');
+  const numSel   = document.getElementById('egr-busq-num');
+  const cont     = document.getElementById('egr-busq-resultado');
+  cont.innerHTML = '';
+  numSel.innerHTML = '<option value="">— Elegí cosecha y ubicación —</option>';
+  numSel.disabled  = true;
+
+  if (!cosecha) {
+    ubSel.innerHTML = '<option value="">— Primero elegí cosecha —</option>';
+    ubSel.disabled  = true;
+    return;
   }
+
+  const ubicaciones = [...new Set(
+    bolsones
+      .filter(b => b.cosecha === cosecha && (b.ingresado - b.egresado) > 0)
+      .map(b => b.ubicacion || b.campo || '—')
+  )].sort();
+
+  if (!ubicaciones.length) {
+    ubSel.innerHTML = '<option value="">Sin bolsones disponibles</option>';
+    ubSel.disabled  = true;
+    return;
+  }
+  ubSel.disabled  = false;
+  ubSel.innerHTML = '<option value="">— Seleccionar ubicación —</option>' +
+    ubicaciones.map(u => `<option value="${u}">${u}</option>`).join('');
+  if (ubicaciones.length === 1) { ubSel.value = ubicaciones[0]; actualizarOpcionesBolsonEgr(); }
 }
 
 function actualizarOpcionesBolsonEgr() {
-  const cosecha = document.getElementById('egr-busq-cosecha').value;
-  const numSel  = document.getElementById('egr-busq-num');
-  const cont    = document.getElementById('egr-busq-resultado');
+  const cosecha  = document.getElementById('egr-busq-cosecha').value;
+  const ubicacion= document.getElementById('egr-busq-ubicacion').value;
+  const numSel   = document.getElementById('egr-busq-num');
+  const cont     = document.getElementById('egr-busq-resultado');
   cont.innerHTML = '';
 
-  if (!cosecha) {
-    numSel.innerHTML = '<option value="">— Primero elegí cosecha —</option>';
+  if (!cosecha || !ubicacion) {
+    numSel.innerHTML = '<option value="">— Elegí cosecha y ubicación —</option>';
     numSel.disabled  = true;
     return;
   }
 
-  // Bolsones de esa cosecha con stock y numCampaña
   const disponibles = bolsones.filter(b =>
-    b.cosecha === cosecha && (b.ingresado - b.egresado) > 0 && b.numCampaña
+    b.cosecha === cosecha &&
+    (b.ubicacion || b.campo || '—') === ubicacion &&
+    (b.ingresado - b.egresado) > 0 &&
+    b.numCampaña
   ).sort((a, b) => a.numCampaña - b.numCampaña);
 
   if (!disponibles.length) {
@@ -2144,8 +2318,8 @@ function actualizarOpcionesBolsonEgr() {
   numSel.disabled  = false;
   numSel.innerHTML = '<option value="">— N° de bolsón —</option>' +
     disponibles.map(b => {
-      const stock   = b.ingresado - b.egresado;
-      const campoD  = _campoDisplay(b);
+      const stock  = b.ingresado - b.egresado;
+      const campoD = _campoDisplay(b);
       return `<option value="${b.id}">B${b.numCampaña} · ${b.grano} · ${campoD} · ${stock.toLocaleString('es-AR')} kg</option>`;
     }).join('');
 }
@@ -2247,6 +2421,7 @@ function registrarIngreso() {
   const cosecha   = document.getElementById('ing-cosecha').value.trim();
   const obs       = document.getElementById('ing-obs').value.trim();
   const fecha     = document.getElementById('ing-fecha').value || new Date().toISOString().split('T')[0];
+  const ubicacion = document.getElementById('ing-ubicacion').value.trim();
   const alertEl   = document.getElementById('ing-alert');
 
   if (!inquilino || !grano) {
@@ -2285,6 +2460,7 @@ function registrarIngreso() {
     id: nextBolson++, numCampaña: numEnCampaña, inquilino,
     campo: campoRef, lote: loteDisplay, lotes: [...lotesValidos],
     grano, ingresado: totalKilos, egresado: 0, obs, cosecha, fecha,
+    ubicacion: ubicacion || campoRef,
     cargas: [primeraCarga]
   };
   bolsones.push(b);
@@ -2300,6 +2476,7 @@ function registrarIngreso() {
   ['ing-inquilino','ing-grano','ing-obs','ing-cosecha'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('ing-fecha').value = '';
   document.getElementById('ing-num-campaña').value = '';
+  document.getElementById('ing-ubicacion').value = '';
   document.getElementById('ing-fotos-preview').innerHTML = '';
   document.getElementById('ing-lotes-rows').innerHTML = '';
   document.getElementById('ing-total-bar').style.display = 'none';
@@ -2796,7 +2973,7 @@ function guardarEdicionEgreso() {
         viaje.destino = destino || viaje.destino;
         viaje.grano   = grano   || viaje.grano;
         viaje.fecha   = fecha   || viaje.fecha;
-        viaje.flete   = Math.round(nuevoKg * (c.tarifa_kg || 0));
+        viaje.flete   = Math.round(nuevoKg * _getTarifaMes(claveCh, viaje.fecha ? viaje.fecha.slice(0,7) : mesActualFletes));
 
         // Si cambió el mes del viaje, reubicar mesActualFletes al mes con datos
         const fechaNuevo = viaje.fecha ? viaje.fecha.slice(0,7) : null;
@@ -3058,12 +3235,33 @@ function renderDashboard() {
     <div class="metric-card"><div class="metric-label">Bolsones activos</div><div class="metric-value">${bolsones.filter(b=>b.ingresado-b.egresado>0).length}</div><div class="metric-unit">con stock disponible</div></div>
     <div class="metric-card"><div class="metric-label">Movimientos</div><div class="metric-value">${movimientos.length}</div><div class="metric-unit">registrados</div></div>
     <div class="metric-card"><div class="metric-label">Soja disponible</div><div class="metric-value">${tot.soja.toLocaleString('es-AR')}</div><div class="metric-unit">kilogramos</div></div>`;
-  const pc = {}; Object.keys(CAMPOS).forEach(c => { pc[c] = {soja:0,maiz:0,trigo:0,sorgo:0}; });
-  bolsones.forEach(b => { const s=b.ingresado-b.egresado; if(s<=0) return; const g=b.grano.toLowerCase().replace('í','i').replace('ó','o'); if(pc[b.campo]&&pc[b.campo][g]!==undefined) pc[b.campo][g]+=s; });
-  document.getElementById('tbody-dashboard').innerHTML = Object.keys(pc).map(c => {
-    const d=pc[c]; const t=d.soja+d.maiz+d.trigo+d.sorgo;
-    return `<tr><td><span class="badge-campo">${c}</span></td><td><span class="badge-inq">${CAMPOS[c].inquilino}</span></td><td class="num">${d.soja>0?d.soja.toLocaleString('es-AR'):'—'}</td><td class="num">${d.maiz>0?d.maiz.toLocaleString('es-AR'):'—'}</td><td class="num">${d.trigo>0?d.trigo.toLocaleString('es-AR'):'—'}</td><td class="num">${d.sorgo>0?d.sorgo.toLocaleString('es-AR'):'—'}</td><td class="num" style="font-weight:600">${t>0?t.toLocaleString('es-AR'):'—'}</td></tr>`;
-  }).join('');
+  // Stock por ubicación (campo físico del bolsón)
+  const porUbic = {};
+  bolsones.forEach(b => {
+    const ubic = b.ubicacion || b.campo || '—';
+    if (!porUbic[ubic]) porUbic[ubic] = { soja:0, maiz:0, trigo:0, sorgo:0, inquilino: '' };
+    // Inquilino: del bolsón
+    if (b.inquilino) porUbic[ubic].inquilino = b.inquilino;
+    const s = b.ingresado - b.egresado;
+    if (s <= 0) return;
+    const g = b.grano.toLowerCase().replace('í','i').replace('ó','o');
+    if (porUbic[ubic][g] !== undefined) porUbic[ubic][g] += s;
+  });
+  document.getElementById('tbody-dashboard').innerHTML = Object.keys(porUbic).length
+    ? Object.entries(porUbic).sort(([a],[b])=>a.localeCompare(b)).map(([ubic, d]) => {
+        const t = d.soja + d.maiz + d.trigo + d.sorgo;
+        const inqLabel = CAMPOS_DATA[ubic] ? CAMPOS_DATA[ubic].inquilino : (d.inquilino || '—');
+        return `<tr>
+          <td><span class="badge-campo" style="background:#E0F2FE;color:#0369A1">${ubic}</span></td>
+          <td><span class="badge-inq">${inqLabel}</span></td>
+          <td class="num">${d.soja>0?d.soja.toLocaleString('es-AR'):'—'}</td>
+          <td class="num">${d.maiz>0?d.maiz.toLocaleString('es-AR'):'—'}</td>
+          <td class="num">${d.trigo>0?d.trigo.toLocaleString('es-AR'):'—'}</td>
+          <td class="num">${d.sorgo>0?d.sorgo.toLocaleString('es-AR'):'—'}</td>
+          <td class="num" style="font-weight:600">${t>0?t.toLocaleString('es-AR'):'—'}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="7"><div class="empty-state">Sin stock registrado</div></td></tr>';
   _renderTotalesCampaña('totales-campaña-dashboard');
 }
 
@@ -3077,10 +3275,11 @@ function renderBolsones() {
     const tc  = 'tag-' + b.grano.toLowerCase().replace('í','i').replace('ó','o');
     const nCargas = b.cargas ? b.cargas.length : (b.ingresado > 0 ? 1 : 0);
     const nFotos  = b.cargas ? b.cargas.reduce((a,c) => a + (c.fotos ? c.fotos.length : 0), 0) : 0;
-    // Mostrar número por campaña si existe
-    const numDisplay = b.numCampaña ? `B${b.numCampaña}` : `#${b.id}`;
+    const numDisplay  = b.numCampaña ? `B${b.numCampaña}` : `#${b.id}`;
+    const ubicDisplay = b.ubicacion || '—';
     return `<tr>
       <td class="num" style="color:var(--text3)">${numDisplay}</td>
+      <td><span class="badge-campo" style="background:#E0F2FE;color:#0369A1">${ubicDisplay}</span></td>
       <td><span class="badge-campo">${_campoDisplay(b)}</span></td>
       <td><span class="badge-inq">${b.inquilino}</span></td>
       <td class="num">${_lotesLabel(b.lotes) || b.lote}</td>
@@ -3107,7 +3306,6 @@ function renderBolsones() {
     </tr>`;
   }).join('');
 
-  // Totales por campaña debajo de la tabla
   const totCont = document.getElementById('totales-campaña-bolsones');
   if (totCont) _renderTotalesCampaña('totales-campaña-bolsones');
 }
@@ -3227,8 +3425,19 @@ function renderEstructura() {
     }
   });
 
+  // Recopilar todas las campañas presentes en el sistema
+  const todasCampaniasSistema = new Set();
+  bolsones.forEach(b => { if (b.cosecha) todasCampaniasSistema.add(b.cosecha); });
+
   cont.innerHTML = Object.entries(CAMPOS_DATA).map(([campo, info]) => {
-    const totalHa = info.lotes.reduce((s, l) => s + (l.ha || 0), 0);
+    // Calcular total ha sumando la última campaña disponible por lote (para el subtítulo)
+    const cosechasGlobal = [...new Set(
+      (info.lotes || []).flatMap(l => Object.keys(l.ha_por_campania || {}))
+    )].sort().reverse();
+    const ultimaCamp = cosechasGlobal[0] || null;
+    const totalHaUltima = ultimaCamp
+      ? info.lotes.reduce((s, l) => s + ((l.ha_por_campania || {})[ultimaCamp] || 0), 0)
+      : 0;
 
     // Tabla de rindes por lote y cosecha
     const cosechasUsadas = [...new Set(
@@ -3242,19 +3451,23 @@ function renderEstructura() {
         <div class="section-label" style="margin-bottom:8px">📊 Rindes por lote (kilos ingresados)</div>
         <table class="rinde-table" style="width:100%;font-size:12px">
           <thead><tr>
-            <th>Lote</th><th>Ha</th>
-            ${cosechasUsadas.map(co=>`<th>Campaña ${co}</th>`).join('')}
+            <th>Lote</th>
+            ${cosechasUsadas.map(co=>`<th>Campaña ${co}<br><span style="font-weight:400;color:var(--text3);font-size:10px">Ha · kg · qq/ha</span></th>`).join('')}
           </tr></thead>
           <tbody>
             ${info.lotes.map(l => {
               const lRindes = (rindes[campo] && rindes[campo][l.num]) || {};
+              const hpc = l.ha_por_campania || {};
               return `<tr>
                 <td>Lote ${l.num}</td>
-                <td class="num">${l.ha ? l.ha + ' ha' : '—'}</td>
                 ${cosechasUsadas.map(co => {
                   const kg = lRindes[co] || 0;
-                  const qq = l.ha && kg ? (kg / 100 / l.ha).toFixed(1) : null;
-                  return `<td class="num">${kg ? kg.toLocaleString('es-AR') + ' kg' : '—'}
+                  const haUsada = hpc[co] != null ? hpc[co] : 0;
+                  const qq = haUsada && kg ? (kg / 100 / haUsada).toFixed(1) : null;
+                  const haLabel = haUsada
+                    ? `<span style="color:var(--green);font-weight:600">${haUsada} ha</span>`
+                    : '<span style="color:var(--text3)">— ha</span>';
+                  return `<td class="num">${haLabel}<br>${kg ? kg.toLocaleString('es-AR') + ' kg' : '—'}
                     ${qq ? `<br><span class="rinde-val">${qq} qq/ha</span>` : ''}</td>`;
                 }).join('')}
               </tr>`;
@@ -3267,24 +3480,49 @@ function renderEstructura() {
       <div class="campo-header-edit">
         <div style="flex:1">
           <div class="campo-name-disp">${campo}</div>
-          <div style="font-size:12px;color:var(--text3)">Inquilino: ${info.inquilino} · ${info.lotes.length} lotes · ${totalHa > 0 ? totalHa + ' ha totales' : 'Sin hectáreas cargadas'}</div>
+          <div style="font-size:12px;color:var(--text3)">Inquilino: ${info.inquilino} · ${info.lotes.length} lotes${totalHaUltima > 0 ? ' · ' + totalHaUltima + ' ha (' + ultimaCamp + ')' : ''}</div>
         </div>
         <button class="add-lote-btn" onclick="agregarLoteEstructura('${campo}')">+ Agregar lote</button>
       </div>
 
       <div id="lotes-edit-${campo.replace(/\s/g,'_')}">
-        ${info.lotes.map((l, i) => `
-          <div class="lote-edit-row" id="lote-edit-${campo.replace(/\s/g,'_')}-${i}">
-            <span style="font-size:12px;color:var(--text2);width:40px">Lote</span>
-            <input type="number" value="${l.num}" min="1" style="width:60px"
-              onchange="editarNumLote('${campo}',${i},this.value)" placeholder="N°">
-            <label style="margin-left:8px">Ha:</label>
-            <input type="number" value="${l.ha||''}" min="0" step="0.1" style="width:70px"
-              onchange="editarHaLote('${campo}',${i},this.value)" placeholder="0">
-            <span style="font-size:11px;color:var(--text3)">ha</span>
-            <button class="accion-btn accion-del" style="margin-left:auto"
-              onclick="eliminarLoteEstructura('${campo}',${i})">🗑️</button>
-          </div>`).join('')}
+        ${info.lotes.map((l, i) => {
+          const safeC = campo.replace(/\s/g,'_');
+          const hpc = l.ha_por_campania || {};
+          const campaniasDelLote = Object.keys(hpc).sort().reverse();
+          return `
+          <div class="lote-edit-row" id="lote-edit-${safeC}-${i}" style="flex-direction:column;align-items:flex-start;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px;width:100%">
+              <span style="font-size:12px;color:var(--text2);width:40px;flex-shrink:0">Lote</span>
+              <input type="number" value="${l.num}" min="1" style="width:60px"
+                onchange="editarNumLote('${campo}',${i},this.value)" placeholder="N°">
+              <button class="accion-btn accion-del" style="margin-left:auto"
+                onclick="eliminarLoteEstructura('${campo}',${i})">🗑️</button>
+            </div>
+            <!-- Ha por campaña -->
+            <div style="padding-left:48px;width:100%">
+              <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">
+                📅 Hectáreas por campaña
+              </div>
+              <div id="ha-campania-rows-${safeC}-${i}">
+                ${campaniasDelLote.map(co => `
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+                    <span style="font-size:11px;color:var(--text2);min-width:54px;font-weight:600;font-family:var(--mono)">${co}</span>
+                    <input type="number" value="${hpc[co]}" min="0" step="0.1" style="width:75px;padding:4px 7px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)"
+                      onchange="editarHaCampaniaLote('${campo}',${i},'${co}',this.value)">
+                    <span style="font-size:11px;color:var(--text3)">ha</span>
+                    <button onclick="editarHaCampaniaLote('${campo}',${i},'${co}',0)"
+                      style="padding:2px 7px;background:none;border:1px solid rgba(139,24,24,0.2);border-radius:4px;font-size:11px;cursor:pointer;color:var(--red)" title="Quitar esta campaña">✕</button>
+                  </div>`).join('')}
+                ${campaniasDelLote.length === 0 ? `<div style="font-size:11px;color:var(--text3);font-style:italic;margin-bottom:4px">Sin campañas asignadas</div>` : ''}
+              </div>
+              <button onclick="agregarHaCampaniaLote('${campo}',${i})"
+                style="margin-top:4px;display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border:1px dashed rgba(26,92,56,0.4);border-radius:4px;background:none;color:var(--green);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans)">
+                + Agregar campaña
+              </button>
+            </div>
+          </div>`;
+        }).join('')}
       </div>
       ${rindeTable}
     </div>`;
@@ -3295,7 +3533,7 @@ function renderEstructura() {
 function agregarLoteEstructura(campo) {
   if (!CAMPOS_DATA[campo]) return;
   const maxNum = Math.max(0, ...CAMPOS_DATA[campo].lotes.map(l => l.num));
-  CAMPOS_DATA[campo].lotes.push({ num: maxNum + 1, ha: 0 });
+  CAMPOS_DATA[campo].lotes.push({ num: maxNum + 1, ha_por_campania: {} });
   CAMPOS = _rebuildCampos();
   guardarEstado();
   renderEstructura();
@@ -3319,11 +3557,85 @@ function editarNumLote(campo, idx, val) {
   guardarEstado();
 }
 
-function editarHaLote(campo, idx, val) {
+function editarHaCampaniaLote(campo, idx, campania, val) {
   if (!CAMPOS_DATA[campo] || !CAMPOS_DATA[campo].lotes[idx]) return;
-  CAMPOS_DATA[campo].lotes[idx].ha = parseFloat(val) || 0;
+  const lote = CAMPOS_DATA[campo].lotes[idx];
+  if (!lote.ha_por_campania) lote.ha_por_campania = {};
+  const v = parseFloat(val);
+  if (v > 0) {
+    lote.ha_por_campania[campania] = v;
+  } else {
+    delete lote.ha_por_campania[campania];
+  }
   guardarEstado();
-  renderEstructura(); // re-render para actualizar total ha
+  renderEstructura();
+}
+
+function agregarHaCampaniaLote(campo, idx) {
+  // Buscar todas las campañas conocidas en el sistema
+  const todasCampanias = new Set();
+  bolsones.forEach(b => { if (b.cosecha) todasCampanias.add(b.cosecha); });
+  Object.values(acopios).forEach(a => {
+    (a.movimientos || []).forEach(m => { if (m.campania) todasCampanias.add(m.campania); });
+  });
+  const campañasArr = [...todasCampanias].sort();
+
+  const lote = CAMPOS_DATA[campo] && CAMPOS_DATA[campo].lotes[idx];
+  if (!lote) return;
+  if (!lote.ha_por_campania) lote.ha_por_campania = {};
+
+  // Mostrar un mini-modal inline para elegir campaña y ha
+  const rowId = `ha-nueva-campania-${campo.replace(/\s/g,'_')}-${idx}`;
+  // Si ya existe el row, no duplicar
+  if (document.getElementById(rowId)) return;
+
+  const container = document.getElementById(`ha-campania-rows-${campo.replace(/\s/g,'_')}-${idx}`);
+  if (!container) return;
+
+  const div = document.createElement('div');
+  div.id = rowId;
+  div.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;background:var(--green-light);border:1px dashed rgba(26,92,56,0.4);border-radius:6px;padding:6px 8px';
+  div.innerHTML = `
+    <select id="sel-camp-nueva-${campo.replace(/\s/g,'_')}-${idx}" style="flex:1;padding:4px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;background:white;color:var(--text)">
+      <option value="">— Campaña —</option>
+      ${campañasArr.map(c=>`<option value="${c}">${c}</option>`).join('')}
+      <option value="__nueva__">✏️ Escribir nueva...</option>
+    </select>
+    <input type="number" id="inp-ha-nueva-${campo.replace(/\s/g,'_')}-${idx}" min="0" step="0.1" placeholder="Ha" style="width:65px;padding:4px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:var(--mono)">
+    <button onclick="_confirmarHaNuevaCampania('${campo}',${idx})" style="padding:4px 10px;background:var(--green);color:white;border:none;border-radius:4px;font-size:12px;cursor:pointer;font-weight:600">✓</button>
+    <button onclick="document.getElementById('${rowId}').remove()" style="padding:4px 8px;background:none;border:1px solid var(--border2);border-radius:4px;font-size:12px;cursor:pointer;color:var(--text3)">✕</button>
+  `;
+  container.appendChild(div);
+
+  // Manejar opción "escribir nueva"
+  const sel = div.querySelector(`#sel-camp-nueva-${campo.replace(/\s/g,'_')}-${idx}`);
+  sel.onchange = function() {
+    if (this.value === '__nueva__') {
+      this.style.display = 'none';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.placeholder = 'Ej: 25/26'; inp.maxLength = 10;
+      inp.style.cssText = 'flex:1;padding:4px 6px;border:1px solid var(--border2);border-radius:4px;font-size:12px';
+      inp.id = sel.id; // misma id para que _confirmar lo encuentre
+      sel.parentNode.insertBefore(inp, sel.nextSibling);
+    }
+  };
+}
+
+function _confirmarHaNuevaCampania(campo, idx) {
+  const safeId = campo.replace(/\s/g,'_');
+  const rowId = `ha-nueva-campania-${safeId}-${idx}`;
+  const selEl = document.getElementById(`sel-camp-nueva-${safeId}-${idx}`);
+  const haEl  = document.getElementById(`inp-ha-nueva-${safeId}-${idx}`);
+  if (!selEl || !haEl) return;
+  const campania = selEl.tagName === 'SELECT' ? selEl.value : selEl.value.trim();
+  const ha = parseFloat(haEl.value);
+  if (!campania || campania === '__nueva__' || !(ha > 0)) {
+    mostrarToast('⚠️ Ingresá campaña y hectáreas válidas');
+    return;
+  }
+  editarHaCampaniaLote(campo, idx, campania, ha);
+  const rowEl = document.getElementById(rowId);
+  if (rowEl) rowEl.remove();
 }
 
 // ─── PERSISTENCIA — Firebase (nube) + localStorage (respaldo local) ───
@@ -3394,7 +3706,14 @@ function cargarEstado() {
           if (d.pctSueldo !== undefined) pctSueldo = d.pctSueldo;
           if (d.camiones)    camiones    = d.camiones;
           if (d.cisterna)    cisterna    = d.cisterna;
-          if (d.camposData)  { CAMPOS_DATA = d.camposData; CAMPOS = _rebuildCampos(); }
+          if (d.camposData)  {
+            CAMPOS_DATA = d.camposData;
+            // Migración: asegurar ha_por_campania en lotes viejos
+            Object.values(CAMPOS_DATA).forEach(info => {
+              (info.lotes || []).forEach(l => { if (!l.ha_por_campania) l.ha_por_campania = {}; });
+            });
+            CAMPOS = _rebuildCampos();
+          }
           if (d.nextBolsonPorCampania) nextBolsonPorCampania = d.nextBolsonPorCampania;
           deduplicarAcopios();
           mostrarToast('✅ Datos sincronizados');
@@ -3452,7 +3771,14 @@ function _cargarDesdeLocal() {
     if (p)   pctSueldo   = parseFloat(p);
     if (cam) camiones    = JSON.parse(cam);
     if (cist)cisterna    = JSON.parse(cist);
-    if (cd)  { CAMPOS_DATA = JSON.parse(cd); CAMPOS = _rebuildCampos(); }
+    if (cd)  {
+      CAMPOS_DATA = JSON.parse(cd);
+      // Migración: asegurar ha_por_campania en lotes viejos
+      Object.values(CAMPOS_DATA).forEach(info => {
+        (info.lotes || []).forEach(l => { if (!l.ha_por_campania) l.ha_por_campania = {}; });
+      });
+      CAMPOS = _rebuildCampos();
+    }
     if (nbc) nextBolsonPorCampania = JSON.parse(nbc);
     deduplicarAcopios();
   } catch(e) { console.warn('No se pudo restaurar desde localStorage:', e); }
@@ -3548,7 +3874,7 @@ function confirmarBorrado() {
 
   bolsones = []; movimientos = []; nextBolson = 1; nextMovId = 1; bolsonSeleccionado = null;
   acopios = {}; choferes = {}; camiones = {}; pctSueldo = 18;
-  cisterna = { lotes: [], movimientos: [] };
+  cisterna = { lotes: [], movimientos: [], equipos_cosecha: [], equipos_flete_extra: [] };
   ultimaCPE = null; acopioActual = null; choferActual = null; camionActual = null;
   renderDashboard(); renderBolsones(); renderMovimientos(); renderAcopios();
   mostrarToast('🗑️ Datos eliminados');
@@ -3604,6 +3930,33 @@ function obtenerOCrearAcopio(nombre, cuit) {
   return claveNueva;
 }
 
+let _detCampaniaActual = null; // null = todas las campañas
+
+function getCampaniasAcopio(clave) {
+  const a = acopios[clave];
+  if (!a) return [];
+  const set = new Set();
+  (a.movimientos || []).forEach(m => {
+    if (m.campania) set.add(m.campania);
+  });
+  return [...set].sort();
+}
+
+function calcularStatsAcopioCamp(clave, campania) {
+  // campania = null → todas; o string "25/26"
+  let kg_entregado = 0, kg_mermado = 0, kg_liquidado = 0, neto_pagar = 0;
+  const a = acopios[clave];
+  if (!a) return { kg_entregado:0, kg_mermado:0, kg_liquidado:0, neto_pagar:0, kg_disponible:0 };
+  (a.movimientos || []).forEach(m => {
+    if (campania && m.campania && m.campania !== campania) return;
+    if (m.tipo === 'entrega')     kg_entregado  += m.kg || 0;
+    if (m.tipo === 'merma')       kg_mermado    += m.kg || 0;
+    if (m.tipo === 'liquidacion') { kg_liquidado += m.kg || 0; neto_pagar += m.neto_pagar || 0; }
+  });
+  return { kg_entregado, kg_mermado, kg_liquidado, neto_pagar,
+           kg_disponible: kg_entregado - kg_mermado - kg_liquidado };
+}
+
 function calcularStatsAcopio(clave) {
   let kg_entregado = 0, kg_mermado = 0, kg_liquidado = 0, neto_pagar = 0;
   (acopios[clave]?.movimientos || []).forEach(m => {
@@ -3628,7 +3981,7 @@ function renderAcopios() {
   }
 
   let totEntregado = 0, totDisponible = 0, totNeto = 0;
-  keys.forEach(k => { const s = calcularStatsAcopio(k); totEntregado += s.kg_entregado; totDisponible += s.kg_disponible; totNeto += s.neto_pagar; });
+  keys.forEach(k => { const s = calcularStatsAcopio(k); totEntregado += (s.kg_entregado - s.kg_mermado); totDisponible += s.kg_disponible; totNeto += s.neto_pagar; });
 
   metrEl.innerHTML = `
     <div class="metric-card"><div class="metric-label">Acopios / Cooperativas</div><div class="metric-value">${keys.length}</div><div class="metric-unit">con entregas</div></div>
@@ -3657,17 +4010,27 @@ function renderAcopios() {
 
 function verDetalleAcopio(clave) {
   acopioActual = clave;
+  _detCampaniaActual = null; // reset filtro al abrir
   document.getElementById('acopio-lista-view').style.display = 'none';
   document.getElementById('acopio-detalle-view').style.display = 'block';
   document.getElementById('acopio-page-sub').textContent = acopios[clave].nombre;
-  // Reset PDF drops
-  ['liq','cert'].forEach(p => {
-    const d = document.getElementById(p+'-drop');
-    if (d) { d.className='pdf-drop'; d.onclick=()=>document.getElementById(p+'-input').click(); }
-    const i = document.getElementById(p+'-input'); if(i) i.value='';
-    const s = document.getElementById(p+'-status'); if(s) s.innerHTML='';
-  });
   renderDetalleAcopio(clave);
+}
+
+function _poblarSelectorCampaniaLiq(clave) {
+  const sel = document.getElementById('liq-campania-sel');
+  if (!sel) return;
+  const campanias = getCampaniasAcopio(clave);
+  sel.innerHTML = '<option value="">— Seleccionar campaña —</option>';
+  campanias.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = 'Campaña ' + c;
+    sel.appendChild(opt);
+  });
+  // Limpiar el campo de campaña nueva
+  const txt = document.getElementById('liq-campania-nueva');
+  if (txt) txt.value = '';
 }
 
 function volverListaAcopios() {
@@ -3678,20 +4041,62 @@ function volverListaAcopios() {
   renderAcopios();
 }
 
+function seleccionarCampaniaDetalle(clave, campania) {
+  _detCampaniaActual = campania;
+  renderDetalleAcopio(clave);
+}
+
+function toggleAcordeon(id) {
+  const el      = document.getElementById(id);
+  const chevron = document.getElementById(id + '-chevron');
+  if (!el) return;
+  const abierto = el.style.display !== 'none';
+  el.style.display = abierto ? 'none' : 'block';
+  if (chevron) chevron.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
 function renderDetalleAcopio(clave) {
   const a = acopios[clave];
-  const s = calcularStatsAcopio(clave);
+  const campanias = getCampaniasAcopio(clave);
+  const campFiltro = _detCampaniaActual; // null = todas
+
+  // Render pills de campaña
+  const pillsEl = document.getElementById('det-campania-pills');
+  if (pillsEl) {
+    const pillStyle = (active) => `padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid ${active ? 'var(--blue)' : 'var(--border2)'};background:${active ? 'var(--blue)' : 'var(--surface)'};color:${active ? '#fff' : 'var(--text2)'};font-family:var(--sans);transition:all .15s`;
+    let pillsHtml = `<button style="${pillStyle(!campFiltro)}" onclick="seleccionarCampaniaDetalle('${clave}', null)">Todas</button>`;
+    campanias.forEach(c => {
+      pillsHtml += `<button style="${pillStyle(campFiltro === c)}" onclick="seleccionarCampaniaDetalle('${clave}', '${c}')">${c}</button>`;
+    });
+    pillsEl.innerHTML = pillsHtml;
+  }
+  const filterWrap = document.getElementById('det-campania-filter-wrap');
+  if (filterWrap) filterWrap.style.display = campanias.length ? 'flex' : 'none';
+
+  // Badge en header de tabla
+  const badge = document.getElementById('det-campania-badge');
+  if (badge) {
+    badge.style.display = campFiltro ? 'inline-block' : 'none';
+    badge.textContent = campFiltro ? 'Campaña ' + campFiltro : '';
+  }
+
+  const s = calcularStatsAcopioCamp(clave, campFiltro);
   document.getElementById('det-nombre').textContent = a.nombre;
   document.getElementById('det-cuit').textContent = a.cuit ? 'CUIT: ' + a.cuit : '';
 
   const fk = n => n.toLocaleString('es-AR');
+  const labelCamp = campFiltro ? ` · ${campFiltro}` : '';
   document.getElementById('det-metricas').innerHTML = `
-    <div class="metric-card"><div class="metric-label">Total entregado</div><div class="metric-value">${fk(s.kg_entregado)}</div><div class="metric-unit">kilogramos</div></div>
-    <div class="metric-card"><div class="metric-label">Mermas</div><div class="metric-value" style="color:var(--amber)">${fk(s.kg_mermado)}</div><div class="metric-unit">kilogramos</div></div>
-    <div class="metric-card"><div class="metric-label">Liquidado</div><div class="metric-value" style="color:var(--blue)">${fk(s.kg_liquidado)}</div><div class="metric-unit">kilogramos</div></div>
-    <div class="metric-card"><div class="metric-label">Saldo disponible</div><div class="metric-value" style="color:var(--green)">${fk(s.kg_disponible)}</div><div class="metric-unit">kg sin liquidar</div></div>`;
+    <div class="metric-card"><div class="metric-label">Total entregado${labelCamp}</div><div class="metric-value">${fk(s.kg_entregado - s.kg_mermado)}</div><div class="metric-unit">kilogramos</div></div>
+    <div class="metric-card"><div class="metric-label">Mermas${labelCamp}</div><div class="metric-value" style="color:var(--amber)">${fk(s.kg_mermado)}</div><div class="metric-unit">kilogramos</div></div>
+    <div class="metric-card"><div class="metric-label">Liquidado${labelCamp}</div><div class="metric-value" style="color:var(--blue)">${fk(s.kg_liquidado)}</div><div class="metric-unit">kilogramos</div></div>
+    <div class="metric-card"><div class="metric-label">Saldo disponible${labelCamp}</div><div class="metric-value" style="color:var(--green)">${fk(s.kg_disponible)}</div><div class="metric-unit">kg sin liquidar</div></div>`;
 
-  const movs = [...a.movimientos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  // Filtrar movimientos por campaña
+  const todosMovs = [...a.movimientos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const movs = campFiltro
+    ? todosMovs.filter(m => !m.campania || m.campania === campFiltro)
+    : todosMovs;
   let saldo = 0;
   const PILL = { entrega:'pill-entrega', merma:'pill-merma', liquidacion:'pill-liquidacion' };
   const LABEL= { entrega:'ENTREGA', merma:'MERMA', liquidacion:'LIQUIDACIÓN' };
@@ -3715,7 +4120,7 @@ function renderDetalleAcopio(clave) {
         kgMov = -(m.kg); saldo += kgMov;
         const pKg = (m.precio_kg||0).toLocaleString('es-AR',{minimumFractionDigits:2});
         const neto= (m.neto_pagar||0).toLocaleString('es-AR',{minimumFractionDigits:2});
-        detalle = `Liq. ${m.coe||'—'} · $${pKg}/kg · Neto: $${neto}`;
+        detalle = `Liq. ${m.coe||'—'} · $${pKg}/kg · Neto: $${neto}${m.campania ? ' · <strong>Camp. '+m.campania+'</strong>' : ''}`;
       }
       const fd = m.fecha ? m.fecha.split('-').reverse().join('/') : '—';
       const signo = kgMov >= 0 ? '+' : '';
@@ -3723,10 +4128,11 @@ function renderDetalleAcopio(clave) {
       const kgColor = kgMov >= 0 ? 'var(--green)' : 'var(--red)';
       // El índice real en el array original (movs está ordenado, igual al array)
       const realIdx = a.movimientos.indexOf(m);
+      const detallePlano = detalle.replace(/<[^>]+>/g, '');
       return `<tr class="${RCLASS[m.tipo]}">
         <td class="num" style="color:var(--text3)">${fd}</td>
         <td><span class="mov-tipo-pill ${PILL[m.tipo]}">${LABEL[m.tipo]}</span></td>
-        <td style="font-size:12px;color:var(--text2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${detalle}">${detalle}</td>
+        <td style="font-size:12px;color:var(--text2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${detallePlano}">${detalle}</td>
         <td>${GTAG(m.grano)}</td>
         <td class="num" style="font-weight:600;color:${kgColor}">${signo}${fk(Math.abs(kgMov))}</td>
         <td class="num ${sc}">${fk(saldo)}</td>
@@ -3735,29 +4141,420 @@ function renderDetalleAcopio(clave) {
     }).join('');
   }
 
-  // Resumen financiero
-  const liqMovs = a.movimientos.filter(m=>m.tipo==='liquidacion');
+  // ── Resumen financiero LIQUIDACIONES: última + acumulado ────────────
+  const liqMovs = a.movimientos.filter(m => m.tipo === 'liquidacion' && (!campFiltro || !m.campania || m.campania === campFiltro));
   const finEl   = document.getElementById('det-financiero');
   if (liqMovs.length) {
-    const sum = key => liqMovs.reduce((acc,m)=>acc+(m[key]||0),0);
-    const $f  = n => '$' + n.toLocaleString('es-AR',{minimumFractionDigits:2});
-    const row = (label, val, style='') =>
-      `<div class="fin-row"><span style="color:var(--text2)">${label}</span><span style="font-weight:600${style}">${val}</span></div>`;
-    finEl.style.display='block';
-    document.getElementById('det-financiero-content').innerHTML = `
-      ${row('Total operación (c/IVA)', $f(sum('total_operacion')))}
-      ${row('Deducciones', '-' + $f(sum('deducciones')), ';color:var(--red)')}
-      ${row('Retenciones AFIP', '-' + $f(sum('retenciones_afip')), ';color:var(--red)')}
-      ${row('IVA RG 4310/2018', '-' + $f(sum('iva_rg4310')), ';color:var(--amber)')}
-      <div class="fin-row fin-row-total" style="margin-top:8px">
-        <span style="font-weight:600;color:var(--green)">💰 Neto a cobrar</span>
-        <span style="font-weight:700;color:var(--green);font-size:15px">${$f(sum('neto_pagar'))}</span>
-      </div>
-      ${row('Pago según condiciones', $f(sum('pago_condiciones')))}`;
-  } else { finEl.style.display='none'; }
+    const sum  = key => liqMovs.reduce((acc, m) => acc + (m[key] || 0), 0);
+    const $f   = n => '$' + Math.abs(n).toLocaleString('es-AR', {minimumFractionDigits:2});
+    const row  = (label, val, style='', indent=false) =>
+      `<div class="fin-row${indent?' fin-row-indent':''}"><span style="color:var(--text2)">${label}</span><span style="font-weight:600${style}">${val}</span></div>`;
+
+    const totalOp     = sum('total_operacion');
+    const deducciones = sum('deducciones');
+    const retAfip     = sum('retenciones_afip');
+    const ivaRG       = sum('iva_rg4310');
+    const neto        = sum('neto_pagar');
+    const pagoCond    = sum('pago_condiciones');
+    const totalCom    = sum('comision');
+
+    // Solo la ÚLTIMA liquidación
+    const ult = liqMovs[liqMovs.length - 1];
+    const fdU = ult.fecha ? ult.fecha.split('-').reverse().join('/') : '—';
+    const comLabelU = ult.comision_pct ? `Comisión (${ult.comision_pct}%)` : 'Comisión';
+    const ultimaHtml = `
+      <div style="margin-bottom:${liqMovs.length > 1 ? 14 : 0}px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+          ÚLTIMA LIQUIDACIÓN · COE ${ult.coe||'—'} · ${fdU}${ult.campania ? ' · Campaña <strong style="color:var(--blue)">'+ult.campania+'</strong>' : ''}
+        </div>
+        <div style="background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);padding:10px 14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px">
+            <span style="color:var(--text3)">Total operación c/IVA</span><span style="text-align:right;font-weight:600">$${(ult.total_operacion||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+            ${ult.comision ? `<span style="color:var(--text3);padding-left:10px">↳ ${comLabelU}</span><span style="text-align:right;color:var(--red)">-$${(ult.comision||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>` : ''}
+            <span style="color:var(--text3)">Total deducciones</span><span style="text-align:right;color:var(--red)">-$${(ult.deducciones||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+            <span style="color:var(--text3)">Retenciones AFIP</span><span style="text-align:right;color:var(--red)">-$${(ult.retenciones_afip||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+            <span style="color:var(--text3)">IVA RG 4310/2018</span><span style="text-align:right;color:var(--amber)">-$${(ult.iva_rg4310||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+            <span style="font-weight:700;color:var(--green)">💰 Neto a cobrar</span><span style="text-align:right;font-weight:700;color:var(--green)">$${(ult.neto_pagar||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+            <span style="color:var(--text3)">Pago según condiciones</span><span style="text-align:right">$${(ult.pago_condiciones||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+          </div>
+        </div>
+      </div>`;
+
+    // ACUMULADO (solo si hay más de una)
+    const acumHtml = liqMovs.length > 1 ? `
+      <div style="border-top:2px solid var(--border);padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+          TOTAL ACUMULADO (${liqMovs.length} liquidaciones)
+        </div>
+        ${row('Total operación c/IVA', $f(totalOp))}
+        ${totalCom ? row('↳ Comisión pagada', '-' + $f(totalCom), ';color:var(--red)', true) : ''}
+        ${row('Deducciones totales', '-' + $f(deducciones), ';color:var(--red)')}
+        ${row('Retenciones AFIP', '-' + $f(retAfip), ';color:var(--red)')}
+        ${row('IVA RG 4310/2018', '-' + $f(ivaRG), ';color:var(--amber)')}
+        <div class="fin-row fin-row-total" style="margin-top:8px">
+          <span style="font-weight:600;color:var(--green)">💰 Neto a cobrar total</span>
+          <span style="font-weight:700;color:var(--green);font-size:15px">$${neto.toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+        </div>
+        ${row('Pago según condiciones', $f(pagoCond))}
+      </div>` : '';
+
+    finEl.style.display = 'block';
+    document.getElementById('det-financiero-content').innerHTML = ultimaHtml + acumHtml;
+  } else { finEl.style.display = 'none'; }
+
+  // ── Resumen financiero CERTIFICACIONES: última + acumulado ──────────
+  const certMovs   = a.movimientos.filter(m => m.tipo === 'merma' && (m.total_servicios > 0 || m.kg_bruto > 0)
+    && (!campFiltro || !m.campania || m.campania === campFiltro));
+  const certFinEl  = document.getElementById('det-financiero-cert');
+  if (certMovs.length) {
+    const $fc   = n => '$' + Math.abs(n).toLocaleString('es-AR', {minimumFractionDigits:2});
+    const fkg   = n => (n||0).toLocaleString('es-AR', {minimumFractionDigits:2});
+    const tblRow = (label, val, bold=false, color='') =>
+      `<tr><td style="padding:4px 8px;color:var(--text3);font-size:12px;border-bottom:1px solid var(--bg3)">${label}</td><td style="padding:4px 8px;text-align:right;font-size:12px;font-weight:${bold?'700':'400'};color:${color||'var(--text)'};border-bottom:1px solid var(--bg3)">${val}</td></tr>`;
+
+    // Solo la ÚLTIMA certificación
+    const ultC = certMovs[certMovs.length - 1];
+    const fdC  = ultC.fecha ? ultC.fecha.split('-').reverse().join('/') : '—';
+    const cptoNGU = Math.max(0, (ultC.total_servicios||0) - (ultC.gastos_generales||0) - (ultC.importe_iva||0));
+    const ultimaCertHtml = `
+      <div style="margin-bottom:${certMovs.length > 1 ? 14 : 0}px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+          ÚLTIMA CERTIFICACIÓN · COE ${ultC.coe||'—'} · ${fdC}${ultC.campania ? ' · Campaña <strong style="color:var(--blue)">'+ultC.campania+'</strong>' : ''}
+        </div>
+        <div style="background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden">
+          <div style="display:grid;grid-template-columns:1fr 1fr">
+            <div style="border-right:1px solid var(--border)">
+              <div style="background:var(--bg3);padding:5px 8px;font-size:11px;font-weight:700;text-align:center;letter-spacing:.06em;border-bottom:1px solid var(--border)">PESO</div>
+              <table style="width:100%;border-collapse:collapse">
+                ${tblRow('Peso Bruto', fkg(ultC.kg_bruto) + ' kg', true)}
+                <tr><td colspan="2" style="padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3);background:var(--bg3);border-top:1px solid var(--border);border-bottom:1px solid var(--border);letter-spacing:.05em">MERMAS</td></tr>
+                ${tblRow('Volátil', fkg(ultC.merma_volatil) + ' kg', false, (ultC.merma_volatil||0)>0?'var(--amber)':'var(--text3)')}
+                ${tblRow('Secado', fkg(ultC.merma_secado) + ' kg', false, (ultC.merma_secado||0)>0?'var(--amber)':'var(--text3)')}
+                ${tblRow('Zarandeo', fkg(ultC.merma_zarandeo) + ' kg', false, (ultC.merma_zarandeo||0)>0?'var(--amber)':'var(--text3)')}
+                <tr style="background:var(--bg3)"><td style="padding:5px 8px;font-size:12px;font-weight:700;border-top:2px solid var(--border)">Peso Neto</td><td style="padding:5px 8px;text-align:right;font-size:12px;font-weight:700;color:var(--green);border-top:2px solid var(--border)">${fkg(ultC.kg_neto)} kg</td></tr>
+              </table>
+            </div>
+            <div>
+              <div style="background:var(--bg3);padding:5px 8px;font-size:11px;font-weight:700;text-align:center;letter-spacing:.06em;border-bottom:1px solid var(--border)">SERVICIOS</div>
+              <table style="width:100%;border-collapse:collapse">
+                ${tblRow('Gastos Generales', $fc(ultC.gastos_generales||0), false, 'var(--red)')}
+                ${tblRow('IVA (21%)', $fc(ultC.importe_iva||0), false, 'var(--red)')}
+                ${cptoNGU > 0 ? tblRow('Cptos. No Gravados', $fc(cptoNGU)) : ''}
+                <tr style="background:var(--bg3)"><td style="padding:5px 8px;font-size:12px;font-weight:700;border-top:2px solid var(--border)">💳 TOTAL</td><td style="padding:5px 8px;text-align:right;font-size:13px;font-weight:700;color:var(--red);border-top:2px solid var(--border)">-${$fc(ultC.total_servicios||0)}</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    const totalServ  = certMovs.reduce((acc, m) => acc + (m.total_servicios||0), 0);
+    const totalGG    = certMovs.reduce((acc, m) => acc + (m.gastos_generales||0), 0);
+    const totalIVA   = certMovs.reduce((acc, m) => acc + (m.importe_iva||0), 0);
+    const totalBruto = certMovs.reduce((acc, m) => acc + (m.kg_bruto||0), 0);
+    const totalNeto  = certMovs.reduce((acc, m) => acc + (m.kg_neto||0), 0);
+    const totalMerma = certMovs.reduce((acc, m) => acc + (m.merma_zarandeo||0) + (m.merma_secado||0) + (m.merma_volatil||0), 0);
+
+    const acumCertHtml = certMovs.length > 1 ? `
+      <div style="border-top:2px solid var(--border);padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">TOTAL ACUMULADO (${certMovs.length} certificaciones)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden">
+            <div style="background:var(--bg3);padding:4px 8px;font-size:11px;font-weight:700;text-align:center;border-bottom:1px solid var(--border)">PESO</div>
+            <table style="width:100%;border-collapse:collapse">
+              ${tblRow('Peso Bruto', totalBruto.toLocaleString('es-AR',{minimumFractionDigits:2}) + ' kg', true)}
+              ${tblRow('Total mermas', totalMerma.toLocaleString('es-AR',{minimumFractionDigits:2}) + ' kg', false, 'var(--amber)')}
+              ${tblRow('Peso Neto', totalNeto.toLocaleString('es-AR',{minimumFractionDigits:2}) + ' kg', true, 'var(--green)')}
+            </table>
+          </div>
+          <div style="background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden">
+            <div style="background:var(--bg3);padding:4px 8px;font-size:11px;font-weight:700;text-align:center;border-bottom:1px solid var(--border)">SERVICIOS</div>
+            <table style="width:100%;border-collapse:collapse">
+              ${tblRow('Gastos Generales', $fc(totalGG), false, 'var(--red)')}
+              ${tblRow('IVA (21%)', $fc(totalIVA), false, 'var(--red)')}
+              ${tblRow('💳 TOTAL', $fc(totalServ), true, 'var(--red)')}
+            </table>
+          </div>
+        </div>
+      </div>` : '';
+
+    certFinEl.style.display = 'block';
+    document.getElementById('det-financiero-cert-content').innerHTML = ultimaCertHtml + acumCertHtml;
+  } else { certFinEl.style.display = 'none'; }
+
+  // ── Historial por cosecha (acordeón) ────────────────────────────────
+  const histEl = document.getElementById('det-historial-cosecha');
+  if (histEl) {
+    const todasCampanias = getCampaniasAcopio(clave);
+    // Agregar "sin campaña" si hay movimientos sin asignar
+    const sinCamp = a.movimientos.filter(m => (m.tipo==='liquidacion'||m.tipo==='merma') && !m.campania);
+    const gruposKeys = [...todasCampanias, ...(sinCamp.length ? ['__sin__'] : [])];
+
+    if (!gruposKeys.length) {
+      histEl.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px 0">Sin liquidaciones ni certificaciones registradas todavía.</div>';
+    } else {
+      const $f2 = n => '$' + Math.abs(n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
+      const fk2 = n => (n||0).toLocaleString('es-AR');
+
+      histEl.innerHTML = gruposKeys.map((camp, gi) => {
+        const label = camp === '__sin__' ? 'Sin campaña asignada' : 'Campaña ' + camp;
+        const liqs  = a.movimientos.filter(m => m.tipo==='liquidacion' && (camp==='__sin__' ? !m.campania : m.campania===camp));
+        const certs = a.movimientos.filter(m => m.tipo==='merma' && (camp==='__sin__' ? !m.campania : m.campania===camp) && (m.total_servicios > 0 || m.kg_bruto > 0));
+
+        // Totales del grupo
+        const liqNeto   = liqs.reduce((s,m)=>s+(m.neto_pagar||0),0);
+        const liqKg     = liqs.reduce((s,m)=>s+(m.kg||0),0);
+        const certBruto = certs.reduce((s,m)=>s+(m.kg_bruto||0),0);
+        const certNeto  = certs.reduce((s,m)=>s+(m.kg_neto||0),0);
+        const certServ  = certs.reduce((s,m)=>s+(m.total_servicios||0),0);
+
+        const liqRows = liqs.map((m,i) => {
+          const fd = m.fecha ? m.fecha.split('-').reverse().join('/') : '—';
+          return `<tr>
+            <td style="padding:6px 10px;font-size:12px;color:var(--text3)">${fd}</td>
+            <td style="padding:6px 10px;font-size:12px"><span class="tag tag-${(m.grano||'').toLowerCase().replace('í','i').replace('ó','o')}">${m.grano||'—'}</span></td>
+            <td style="padding:6px 10px;font-size:12px;color:var(--text2)">COE ${m.coe||'—'}</td>
+            <td style="padding:6px 10px;font-size:12px;font-family:var(--mono);text-align:right">${fk2(m.kg)} kg</td>
+            <td style="padding:6px 10px;font-size:12px;font-family:var(--mono);text-align:right;color:var(--blue)">$${(m.precio_kg||0).toLocaleString('es-AR',{minimumFractionDigits:2})}/kg</td>
+            <td style="padding:6px 10px;font-size:12px;font-family:var(--mono);text-align:right;font-weight:700;color:var(--green)">$${(m.neto_pagar||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+          </tr>`;
+        }).join('');
+
+        const certRows = certs.map((m,i) => {
+          const fd = m.fecha ? m.fecha.split('-').reverse().join('/') : '—';
+          return `<tr>
+            <td style="padding:6px 10px;font-size:12px;color:var(--text3)">${fd}</td>
+            <td style="padding:6px 10px;font-size:12px"><span class="tag tag-${(m.grano||'').toLowerCase().replace('í','i').replace('ó','o')}">${m.grano||'—'}</span></td>
+            <td style="padding:6px 10px;font-size:12px;color:var(--text2)">COE ${m.coe||'—'}</td>
+            <td style="padding:6px 10px;font-size:12px;font-family:var(--mono);text-align:right">${fk2(m.kg_bruto)} kg bruto</td>
+            <td style="padding:6px 10px;font-size:12px;font-family:var(--mono);text-align:right;color:var(--amber)">−${fk2(m.merma_zarandeo||0)} kg merma</td>
+            <td style="padding:6px 10px;font-size:12px;font-family:var(--mono);text-align:right;font-weight:700;color:var(--red)">-${$f2(m.total_servicios)}</td>
+          </tr>`;
+        }).join('');
+
+        const idAcord = `acord-cosecha-${clave}-${gi}`;
+        // Primer grupo abierto por defecto
+        const abierto = gi === gruposKeys.length - 1;
+
+        return `
+        <div style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden">
+          <!-- Header acordeón -->
+          <div onclick="toggleAcordeon('${idAcord}')"
+               style="display:flex;align-items:center;justify-content:space-between;
+                      padding:11px 14px;cursor:pointer;background:${abierto?'var(--bg2)':'var(--surface)'};
+                      transition:background .15s;user-select:none"
+               onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='${abierto?'var(--bg2)':'var(--surface)'}'">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:13px;font-weight:700;color:var(--text)">${camp==='__sin__'?'⚠️':'🌾'} ${label}</span>
+              <span style="font-size:11px;color:var(--text3)">${liqs.length} liq. · ${certs.length} certif.</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px">
+              ${liqs.length ? `<span style="font-size:12px;font-weight:700;color:var(--green)">Neto liq: $${liqNeto.toLocaleString('es-AR',{minimumFractionDigits:2})}</span>` : ''}
+              ${certs.length ? `<span style="font-size:12px;font-weight:600;color:var(--red)">Serv. cert: -$${certServ.toLocaleString('es-AR',{minimumFractionDigits:2})}</span>` : ''}
+              <span id="${idAcord}-chevron" style="font-size:14px;color:var(--text3);transition:transform .2s;transform:rotate(${abierto?180:0}deg)">▾</span>
+            </div>
+          </div>
+          <!-- Contenido acordeón -->
+          <div id="${idAcord}" style="display:${abierto?'block':'none'}">
+            ${liqs.length ? `
+            <div style="border-top:1px solid var(--border);padding:10px 14px 6px">
+              <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">💰 Liquidaciones (${liqs.length})</div>
+              <table style="width:100%;border-collapse:collapse">
+                <thead><tr style="background:var(--bg3)">
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:left">Fecha</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:left">Grano</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:left">COE</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:right">Kg</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:right">Precio</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:right">Neto</th>
+                </tr></thead>
+                <tbody>${liqRows}</tbody>
+                ${liqs.length > 1 ? `<tfoot><tr style="background:var(--green-light)">
+                  <td colspan="3" style="padding:6px 10px;font-size:12px;font-weight:700;color:var(--green)">TOTAL</td>
+                  <td style="padding:6px 10px;font-size:12px;font-weight:700;text-align:right;font-family:var(--mono)">${fk2(liqKg)} kg</td>
+                  <td></td>
+                  <td style="padding:6px 10px;font-size:12px;font-weight:700;text-align:right;color:var(--green);font-family:var(--mono)">$${liqNeto.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+                </tr></tfoot>` : ''}
+              </table>
+            </div>` : ''}
+            ${certs.length ? `
+            <div style="border-top:1px solid var(--border);padding:10px 14px 6px">
+              <div style="font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">📄 Certificaciones (${certs.length})</div>
+              <table style="width:100%;border-collapse:collapse">
+                <thead><tr style="background:var(--bg3)">
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:left">Fecha</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:left">Grano</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:left">COE</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:right">Bruto</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:right">Merma</th>
+                  <th style="padding:5px 10px;font-size:10px;color:var(--text3);font-weight:600;text-align:right">Servicios</th>
+                </tr></thead>
+                <tbody>${certRows}</tbody>
+                ${certs.length > 1 ? `<tfoot><tr style="background:var(--amber-bg)">
+                  <td colspan="3" style="padding:6px 10px;font-size:12px;font-weight:700;color:var(--amber)">TOTAL</td>
+                  <td style="padding:6px 10px;font-size:12px;font-weight:700;text-align:right;font-family:var(--mono)">${fk2(certBruto)} kg</td>
+                  <td style="padding:6px 10px;font-size:12px;font-weight:700;text-align:right;font-family:var(--mono);color:var(--amber)">−${fk2(certBruto-certNeto)} kg</td>
+                  <td style="padding:6px 10px;font-size:12px;font-weight:700;text-align:right;color:var(--red);font-family:var(--mono)">-$${certServ.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+                </tr></tfoot>` : ''}
+              </table>
+            </div>` : ''}
+            ${!liqs.length && !certs.length ? '<div style="padding:14px;text-align:center;font-size:13px;color:var(--text3)">Sin documentos en esta campaña.</div>' : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
 }
 
-// ─── PARSER LIQUIDACIÓN PRIMARIA ──────────────────────────────────
+// ─── CARGA GLOBAL DE PDFs (auto-asigna por CUIT) ──────────────────
+async function procesarPDFGlobal(input, tipo) {
+  const file = input.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('global-pdf-status');
+  statusEl.innerHTML = `<div class="alert" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:12px">⏳ Leyendo PDF...</div>`;
+
+  try {
+    // Extraer texto del PDF
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let texto = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const pg = await pdf.getPage(i);
+      const tc = await pg.getTextContent();
+      texto += tc.items.map(it => it.str).join(' ') + '\n';
+    }
+
+    // Parsear según tipo
+    let datos, cuit, nombre, tipoDoc;
+    if (tipo === 'liquidacion') {
+      datos = parsearLiquidacion(texto);
+      cuit   = datos.acopio_cuit  || '';
+      nombre = datos.acopio_nombre || '';
+      tipoDoc = 'Liquidación Primaria';
+    } else {
+      datos = parsearCertificacion(texto);
+      cuit   = datos.acopio_cuit  || '';
+      nombre = datos.acopio_nombre || '';
+      tipoDoc = 'Certificación Electrónica';
+    }
+
+    if (!cuit && !nombre) {
+      statusEl.innerHTML = `<div class="alert alert-danger">❌ No se pudo identificar el acopio en el PDF. CUIT y nombre no encontrados.</div>`;
+      input.value = '';
+      return;
+    }
+
+    // Buscar acopio existente por CUIT
+    let clave = null;
+    if (cuit) {
+      clave = Object.keys(acopios).find(k => (acopios[k].cuit || '').replace(/[-\s]/g,'') === cuit.replace(/[-\s]/g,''));
+    }
+    // Fallback por nombre
+    if (!clave && nombre) {
+      clave = Object.keys(acopios).find(k => acopios[k].nombre.toLowerCase().includes(nombre.toLowerCase().slice(0,15)));
+    }
+
+    const acopioNuevo = !clave;
+
+    if (acopioNuevo) {
+      // Pedir confirmación antes de crear
+      statusEl.innerHTML = `
+        <div class="alert" style="background:var(--amber-bg);border:1px solid #FCD34D;border-radius:var(--radius-lg);padding:14px 16px">
+          <div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:8px">⚠️ Acopio no encontrado — ¿crear uno nuevo?</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:12px">
+            <strong>Acopio detectado:</strong> ${nombre || '(sin nombre)'}<br>
+            <strong>CUIT:</strong> ${cuit || '(no detectado)'}<br>
+            <strong>Documento:</strong> ${tipoDoc}
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-green" style="width:auto;padding:7px 18px;font-size:12px"
+              onclick="_confirmarPDFGlobal('${tipo}', '${cuit}', '${nombre.replace(/'/g,"\\'")}')">
+              ✅ Crear y asignar
+            </button>
+            <button class="btn btn-outline" style="font-size:12px"
+              onclick="document.getElementById('global-pdf-status').innerHTML='';document.getElementById('global-${tipo==='liquidacion'?'liq':'cert'}-input').value=''">
+              Cancelar
+            </button>
+          </div>
+        </div>`;
+      // Guardar datos parseados para usar si confirma
+      window._pendingPDF = { tipo, datos, cuit, nombre, file };
+      return;
+    }
+
+    // Acopio ya existe → asignar directamente
+    await _aplicarPDFGlobal(tipo, datos, clave);
+    input.value = '';
+    const campUsada = window._globalCampaniaPDF_last || '';
+    statusEl.innerHTML = `<div class="alert alert-success">✅ ${tipoDoc} asignada a <strong>${acopios[clave].nombre}</strong>${campUsada ? ' · Campaña <strong>'+campUsada+'</strong>' : ''}</div>`;
+    renderAcopios();
+
+  } catch(err) {
+    console.error(err);
+    statusEl.innerHTML = `<div class="alert alert-danger">❌ Error al leer el PDF: ${err.message}</div>`;
+    input.value = '';
+  }
+}
+
+async function _confirmarPDFGlobal(tipo, cuit, nombre) {
+  const p = window._pendingPDF;
+  if (!p) return;
+  // Crear acopio nuevo
+  const clave = obtenerOCrearAcopio(nombre, cuit);
+  await _aplicarPDFGlobal(p.tipo, p.datos, clave);
+  document.getElementById(`global-${tipo==='liquidacion'?'liq':'cert'}-input`).value = '';
+  window._pendingPDF = null;
+  document.getElementById('global-pdf-status').innerHTML =
+    `<div class="alert alert-success">✅ Acopio creado y ${tipo==='liquidacion'?'liquidación':'certificación'} registrada en <strong>${nombre}</strong>${window._globalCampaniaPDF_last ? ' · Campaña <strong>'+window._globalCampaniaPDF_last+'</strong>' : ''}</div>`;
+  guardarEstado();
+  renderAcopios();
+}
+
+async function _aplicarPDFGlobal(tipo, datos, clave) {
+  // La campaña elegida en el modal tiene prioridad sobre lo que parsea el PDF
+  const campaniaElegida = window._globalCampaniaPDF || datos.campania || '';
+  window._globalCampaniaPDF_last = campaniaElegida; // para el mensaje de éxito
+  window._globalCampaniaPDF = null; // limpiar para próxima vez
+  if (tipo === 'liquidacion') {
+    const a = acopios[clave];
+    a.movimientos.push({
+      tipo: 'liquidacion',
+      fecha: datos.fecha || new Date().toISOString().split('T')[0],
+      coe: datos.coe || '',
+      grano: datos.grano || '',
+      kg: datos.kg || 0,
+      precio_kg: datos.precio_kg || 0,
+      campania: campaniaElegida,
+      total_operacion:  datos.total_operacion  || 0,
+      deducciones:      datos.deducciones      || 0,
+      retenciones_afip: datos.retenciones_afip || 0,
+      iva_rg4310:       datos.iva_rg4310       || 0,
+      neto_pagar:       datos.neto_pagar       || 0,
+      pago_condiciones: datos.pago_condiciones || 0,
+      comision:         datos.comision         || 0,
+      comision_pct:     datos.comision_pct     || 0,
+    });
+  } else {
+    const a = acopios[clave];
+    a.movimientos.push({
+      tipo: 'merma',
+      fecha: datos.fecha_emision || datos.fecha || new Date().toISOString().split('T')[0],
+      coe: datos.coe || '',
+      grano: datos.grano || '',
+      campania: campaniaElegida,
+      kg: datos.merma_total || (datos.merma_zarandeo || 0) + (datos.merma_secado || 0),
+      merma_zarandeo: datos.merma_zarandeo || 0,
+      merma_secado:   datos.merma_secado   || 0,
+      merma_volatil:  datos.merma_volatil  || 0,
+      kg_bruto:       datos.kg_bruto       || 0,
+      kg_neto:        datos.kg_neto        || 0,
+      total_servicios:  datos.total_servicios  || 0,
+      gastos_generales: datos.gastos_generales || 0,
+      importe_iva:      datos.importe_iva      || 0,
+      ctgs: datos.ctgs || [],
+    });
+  }
+  guardarEstado();
+}
 function parsearLiquidacion(texto) {
   const t = texto;
   // num() inteligente: si el último bloque después del punto tiene ≤2 dígitos → decimal
@@ -3788,70 +4585,126 @@ function parsearLiquidacion(texto) {
   let m = t.match(/C\.O\.E\.?\s*:?\s*(\d{12,15})/i);
   if (m) d.coe = m[1];
 
-  // Fecha
+  // ── ACOPIO / COMPRADOR ────────────────────────────────────────────
+  // En pdfjs el texto del bloque COMPRADOR aparece ANTES del header "COMPRADOR VENDEDOR"
+  // Orden real: datos_comprador → datos_vendedor → "COMPRADOR VENDEDOR" → ...
+  // La PRIMERA "Razón Social:" del texto es siempre el comprador (acopio)
+  // La SEGUNDA "Razón Social:" es el vendedor
+  const todasRazones = [...t.matchAll(/Raz[oó]n Social:\s*([^\n]+(?:\n(?!Domicilio:|Localidad:|C\.U\.I\.T\.|I\.V\.A\.|Ingresos)[^\n]+)?)/gi)];
+  if (todasRazones.length >= 1) {
+    d.acopio_nombre = todasRazones[0][1]
+      .replace(/\s*(Domicilio:|Localidad:|C\.U\.I\.T\.|I\.V\.A\.|Ingresos|CERTIFICACI[OÓ]N|DEPOSITANTE|DEPOSITARIO|COOP\.)[\s\S]*/i, '')
+      .replace(/\n/g,' ').trim();
+  }
+  const todosCuits = [...t.matchAll(/C\.U\.I\.T\.:\s*(\d{11})/gi)];
+  if (todosCuits.length >= 1) d.acopio_cuit = todosCuits[0][1];
+
+  // Fecha de la operación
   m = t.match(/Fecha:\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
   if (!m) m = t.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (m) d.fecha = `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-
-  // Acopio/Comprador (Razón Social del COMPRADOR)
-  m = t.match(/COMPRADOR[\s\S]*?Raz[oó]n Social:\s*([^\n]+)/i);
-  if (m) d.acopio_nombre = m[1].trim();
-  m = t.match(/COMPRADOR[\s\S]*?C\.U\.I\.T\.:\s*(\d{11})/i);
-  if (m) d.acopio_cuit = m[1];
 
   // Grano
   m = t.match(/\d+\s*-\s*(SOJA|MAIZ|MA[IÍ]Z|TRIGO|SORGO)/i);
   if (m) { const g=m[1].toUpperCase(); d.grano = g==='MAIZ'||g==='MAÍZ'?'Maíz':g[0]+g.slice(1).toLowerCase(); }
 
-  // Kg y Precio/kg — "29560 Kg $478.38"
-  m = t.match(/(\d[\d\.]*)\s*Kg\s*\$([\d\.]+)/i);
-  if (m) { d.kg = parseInt(m[1].replace(/\./g,'')); d.precio_kg = parseFloat(m[2]); }
+  // Kg y Precio/kg — fila de OPERACIÓN: "16623 Kg $469.88 $7810815.24 10.5 $820135.60 $8630950.84"
+  m = t.match(/(\d[\d\.]*)\s*Kg\s*\$([\d\.,]+)/i);
+  if (m) { d.kg = parseInt(m[1].replace(/\./g,'')); d.precio_kg = num(m[2]); }
 
   // ── IMPORTES TOTALES ──────────────────────────────────────────────
-  // El PDF tiene layout de 2-3 columnas en esta sección.
-  // pdfplumber extrae los valores SEPARADOS de sus etiquetas, en este orden:
-  //
-  //   $ 1,250,743.92 Total Otras Retenciones:   ← valor RetAFIP, luego etiqueta OtrasRet
-  //   $ 15,625,708.64                            ← valor TotalOperacion (suelto)
-  //   Pago según condiciones: $ 13,636,356.57   ← inline ✓
-  //   Total Deducciones: $ 251,100.19            ← inline ✓
-  //   $ 14,123,864.53                            ← valor NetoPagar (suelto)
-  //   $ 0.00                                     ← Percepciones (ignorar)
-  //   Total Operación:                           ← etiqueta sola
-  //   Importe Neto a Pagar: IVA RG 4310/2018:   ← dos etiquetas solas
-  //   Total Retenciones Afip:                    ← etiqueta sola
-  //   $ 487,507.96                               ← valor IVA RG (al final)
+  // Layout real de pdfjs (columnas mezcladas):
+  // "$ 692,428.77 Total Otras Retenciones:"   ← RetAFIP inline con etiqueta
+  // "$ 8,630,950.84"                           ← TotalOperacion suelto
+  // "Pago según condiciones: $ 7,530,547.57"  ← inline ✓
+  // "Total Deducciones: $ 138,696.64"         ← inline ✓
+  // "$ 7,799,825.43"                           ← NetoPagar suelto
+  // "$ 0.00"                                   ← Percepciones
+  // "Total Operación:"                         ← etiqueta sola
+  // "Importe Neto a Pagar: IVA RG 4310/2018:" ← etiquetas juntas
+  // "Total Retenciones Afip:"                  ← etiqueta sola
+  // "$ 269,277.86"                             ← IVA RG suelto
 
-  // 1. Total Operación: línea sola después de "Total Otras Retenciones:"
+  // 1. Total Operación c/IVA
   m = t.match(/Total Otras Retenciones:[^\n]*\n\s*\$\s*([\d\.,]+)/i);
-  // Fallback: último valor de la fila de OPERACIÓN (Operación c/IVA)
-  if (!m) m = t.match(/\d+\s*Kg\s+\$[\d\.,]+\s+\$[\d\.,]+\s+[\d\.,]+\s+\$[\d\.,]+\s+\$([\d\.,]+)/i);
-  // Fallback inline
+  if (!m) {
+    // Fallback: último valor de la fila de OPERACIÓN (Operación c/IVA)
+    const filaOp = t.match(/\d[\d\.]*\s*Kg\s+\$([\d\.,]+)\s+\$([\d\.,]+)\s+[\d\.,]+\s+\$([\d\.,]+)\s+\$([\d\.,]+)/i);
+    if (filaOp) m = [null, filaOp[4]];
+  }
   if (!m) m = t.match(/Total Operaci[oó]n:\s*\$\s*([\d\.,]+)/i);
   if (m) d.total_operacion = num(m[1]);
 
-  // 2. Deducciones: inline ✓
+  // 2. Deducciones (inline)
   m = t.match(/Total Deducciones:\s*\$\s*([\d\.,]+)/i);
   if (m) d.deducciones = num(m[1]);
 
-  // 3. Retenciones AFIP: valor aparece justo antes de "Total Otras Retenciones:"
+  // 3. Retenciones AFIP: valor ANTES de "Total Otras Retenciones:"
   m = t.match(/\$\s*([\d\.,]+)\s+Total Otras Retenciones/i);
   if (!m) m = t.match(/Total Retenciones Afip:\s*\$\s*([\d\.,]+)/i);
   if (m) d.retenciones_afip = num(m[1]);
 
-  // 4. Neto a Pagar: valor suelto antes de "$ 0.00\nTotal Operación:"
-  m = t.match(/\$\s*([\d\.,]+)\s*\n\s*\$\s*0[,\.]00\s*\n\s*Total Operaci[oó]n/i);
+  // 4. Neto a Pagar: suelto entre Deducciones y "$0.00"
+  m = t.match(/Total Deducciones:[^\r\n]+[\r\n]+\s*\$\s*([\d\.,]+)\s*[\r\n]+\s*\$\s*0[,\.]0/i);
+  if (!m) m = t.match(/\$\s*([\d\.,]+)\s*[\r\n]+\s*\$\s*0[,\.]0[\d]*\s*[\r\n]+\s*Total Operaci[oó]n/i);
   if (!m) m = t.match(/Importe Neto a Pagar:\s*\$\s*([\d\.,]+)/i);
   if (m) d.neto_pagar = num(m[1]);
 
-  // 5. IVA RG 4310/2018: último valor, aparece después de "Total Retenciones Afip:\n"
-  m = t.match(/Total Retenciones Afip:\s*\n\s*\$\s*([\d\.,]+)/i);
-  if (!m) m = t.match(/IVA RG[\s\d\/]+:\s*\$\s*([\d\.,]+)/i);
-  if (m) d.iva_rg4310 = num(m[1]);
+  // 5. IVA RG 4310: aparece después de "Total Retenciones Afip:" solo en el texto
+  // Texto pdfjs: "Total Retenciones Afip:\n$ 269,277.86"
+  const allRetAfip = [...t.matchAll(/Total Retenciones Afip:\s+\$\s*([\d\.,]+)/gi)];
+  if (allRetAfip.length) {
+    d.iva_rg4310 = num(allRetAfip[allRetAfip.length - 1][1]);
+  } else {
+    m = t.match(/IVA RG[^:\r\n]*:\s+\$\s*([\d\.,]+)/i);
+    if (m) d.iva_rg4310 = num(m[1]);
+  }
 
-  // 6. Pago según condiciones: inline ✓
+  // 6. Pago según condiciones (inline)
   m = t.match(/Pago seg[uú]n condiciones:\s*\$\s*([\d\.,]+)/i);
   if (m) d.pago_condiciones = num(m[1]);
+
+  // ── FALLBACKS de cálculo (cuando el texto pdfjs no es parseable directamente) ──
+  // Neto a pagar = Pago condiciones + IVA RG 4310/2018
+  if (!d.neto_pagar && d.pago_condiciones) {
+    d.neto_pagar = d.pago_condiciones + (d.iva_rg4310 || 0);
+  }
+  // Neto a pagar = Total Operación - Deducciones - Retenciones AFIP
+  if (!d.neto_pagar && d.total_operacion && d.deducciones) {
+    d.neto_pagar = d.total_operacion - d.deducciones - (d.retenciones_afip || 0);
+  }
+  // IVA RG = Neto - Pago condiciones
+  if (!d.iva_rg4310 && d.neto_pagar && d.pago_condiciones) {
+    const diff = d.neto_pagar - d.pago_condiciones;
+    if (diff > 0) d.iva_rg4310 = diff;
+  }
+
+  // 7. COMISIÓN — el problema: pdfjs mezcla la fila de comisión con valores de Retenciones
+  // Patrón confiable de la fila DEDUCCIONES:
+  // "[pct_pequeño] $ [base] [iva_pct]% $ [iva_monto] $ [total_comision]"
+  // ej: "1.5 $ 117,162.23 10.5% $ 12302,03 $ 129,464.26"
+  // El % de comisión es siempre pequeño (0.5-15), a diferencia de 7%, 10.5%, 21% de IVA
+  const mCom = t.match(/\b(\d{1,2}[.,]\d{1,4})\s+\$\s*([\d.,]+)\s+\d{1,2}[.,]?\d*%\s+\$[\s\d.,]+\$\s*([\d.,]+)/i);
+  if (mCom) {
+    const pct = parseFloat(mCom[1].replace(',','.'));
+    if (pct > 0 && pct < 15) { // sanity: comisión típica 0.5-5%
+      d.comision_pct = pct;
+      d.comision     = num(mCom[3]);
+    }
+  }
+  // Fallback: buscar "Comisión" + porcentaje pequeño (no IVA) cerca
+  if (!d.comision) {
+    const mCom2 = t.match(/Comisi[oó]n\s+o\s+Gastos[\s\S]{0,80}?(\d{1,2}[.,]\d{1,2})\s+\$\s*([\d.,]+)/i);
+    if (mCom2) {
+      const pct = parseFloat(mCom2[1].replace(',','.'));
+      if (pct > 0 && pct < 15) {
+        d.comision_pct = pct;
+        // Estimar total con IVA de deducciones
+        const base = num(mCom2[2]);
+        d.comision = Math.round(base * (pct / 100) * 1.105 * 100) / 100;
+      }
+    }
+  }
 
   return d;
 }
@@ -3886,8 +4739,8 @@ function parsearCertificacion(texto) {
   let m = t.match(/C\.O\.E\.?\s*:?\s*(\d{12,15})/i);
   if (m) d.coe = m[1];
 
-  // Fecha emisión
-  m = t.match(/Fecha Emisi[oó]n:\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
+  // Fecha emisión — permite saltos de línea entre label y valor (extracción pdfjs)
+  m = t.match(/Fecha Emisi[oó]n:[\s\S]{0,20}?(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
   if (m) d.fecha_emision = `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
 
   // Campaña
@@ -3898,31 +4751,120 @@ function parsearCertificacion(texto) {
   m = t.match(/Grano y Tipo:\s*(SOJA|MAIZ|MA[IÍ]Z|TRIGO|SORGO)/i);
   if (m) { const g=m[1].toUpperCase(); d.grano = g==='MAIZ'||g==='MAÍZ'?'Maíz':g[0]+g.slice(1).toLowerCase(); }
 
-  // Depositario (acopio)
-  m = t.match(/DEPOSITARIO[\s\S]*?Raz[oó]n Social:\s*([^\n]+)/i);
-  if (m) d.acopio_nombre = m[1].trim();
-  m = t.match(/DEPOSITARIO[\s\S]*?C\.U\.I\.T\.:\s*(\d{11})/i);
-  if (m) d.acopio_cuit = m[1];
-
-  // Pesos
-  m = t.match(/Peso Bruto:\s*([\d\.,]+)/i); if(m) d.kg_bruto  = num(m[1]);
-  m = t.match(/Peso Neto:\s*([\d\.,]+)/i);  if(m) d.kg_neto   = num(m[1]);
-
-  // Mermas
-  m = t.match(/Zarandeo:\s*([\d\.,]+)/i);        if(m) d.merma_zarandeo = num(m[1]);
-  m = t.match(/Vol[aá]til:\s*([\d\.,]+)/i);      if(m) d.merma_volatil  = num(m[1]);
-  m = t.match(/Secado:\s*([\d\.,]+)\s*\n/i);     if(m) d.merma_secado   = num(m[1]);
-  d.merma_total = (d.merma_zarandeo||0)+(d.merma_volatil||0)+(d.merma_secado||0);
-
-  // Total servicios
-  m = t.match(/TOTAL:\s*\$\s*([\d\.,]+)/i); if(m) d.total_servicios = num(m[1]);
-
-  // CTGs
-  const rxCtg = /(\d{11})\s*\/\s*(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d\.,]+)/g;
-  let mc;
-  while ((mc=rxCtg.exec(t))!==null) {
-    d.ctgs.push({ ctg:mc[1], carta_porte:mc[2], fecha:mc[3], kg:num(mc[4]) });
+  // ── DEPOSITARIO (acopio) ──────────────────────────────────────────
+  // En pdfjs: DEPOSITARIO aparece ANTES del header "DEPOSITARIO DEPOSITANTE"
+  // La PRIMERA Razón Social es el depositario (acopio)
+  const todasRazones = [...t.matchAll(/Raz[oó]n Social:\s*([^\n]+(?:\n(?!Domicilio:|Localidad:|C\.U\.I\.T\.|I\.V\.A\.|Ingresos)[^\n]+)?)/gi)];
+  if (todasRazones.length >= 1) {
+    d.acopio_nombre = todasRazones[0][1]
+      .replace(/\s*(Domicilio:|Localidad:|C\.U\.I\.T\.|I\.V\.A\.|Ingresos|CERTIFICACI[OÓ]N|DEPOSITANTE|DEPOSITARIO|COOP\.)[\s\S]*/i, '')
+      .replace(/\n/g,' ').trim();
   }
+  const todosCuits = [...t.matchAll(/C\.U\.I\.T\.:\s*(\d{11})/gi)];
+  if (todosCuits.length >= 1) d.acopio_cuit = todosCuits[0][1];
+
+  // ── PESOS — el valor puede aparecer ANTES o DESPUÉS del label en pdfjs ─
+  // Caso normal: "Peso Bruto: 87,960.00"
+  // Caso pdfjs: "87,960.00 Peso Bruto:" (valor antes del label)
+  m = t.match(/Peso\s+Bruto:\s*([\d\.,]+)/i);
+  if (!m) m = t.match(/([\d]{2,3}[,\.][\d\.,]{5,})\s+(?:[\d\.,]+\s+)?Peso\s+Bruto/i);
+  if (m) d.kg_bruto = num(m[1]);
+  m = t.match(/Peso\s+Neto:\s*([\d\.,]+)/i);
+  if (!m) m = t.match(/([\d]{2,3}[,\.][\d\.,]{5,})\s+(?:[\d\.,]+\s+)?Peso\s+Neto/i);
+  if (m) d.kg_neto = num(m[1]);
+
+  // ── MERMAS desde tabla GRANOS ─────────────────────────────────────
+  // Formato de fila: CTG / CartaPorte  Fecha  KgsConf  MermaZarandeoKg  TarifaZ  ImporteZ  %Humedad  MermaSecadoKg  TarifaS  ImporteS
+  // Ejemplo: "10131082931 / 654 20/04/2026 29,480.00 672.00 $ 0.00 $ 0.00 0.00 0.00 $ 0.00 $ 0.00"
+  const rxCtgMerma = /\d{11}\s*\/\s*\d+\s+\d{2}\/\d{2}\/\d{4}\s+([\d\.,]+)\s+([\d\.,]+)\s+\$\s*[\d\.,]+\s+\$\s*[\d\.,]+\s+([\d\.,]+)\s+([\d\.,]+)/g;
+  let mc;
+  let totalZarandeo = 0, totalSecado = 0;
+  while ((mc = rxCtgMerma.exec(t)) !== null) {
+    const mermaZ = num(mc[2]);  // columna MermaZarandeoKg
+    const mermaS = num(mc[4]);  // columna MermaSecadoKg
+    totalZarandeo += mermaZ;
+    totalSecado   += mermaS;
+    d.ctgs.push({ ctg: '', carta_porte: '', kg: num(mc[1]), merma_zarandeo: mermaZ, merma_secado: mermaS });
+  }
+  d.merma_zarandeo = totalZarandeo;
+  d.merma_secado   = totalSecado;
+
+  // Volátil (del bloque PESO/MERMAS)
+  m = t.match(/Vol[aá]til:\s*([\d\.,]+)/i); if(m) d.merma_volatil = num(m[1]);
+
+  // ── FALLBACK desde sección MERMAS de página 2 ──────────────────────
+  // pdfjs mezcla columnas al mismo nivel Y. El texto resultante es:
+  // "Zarandeo: PESO Kilos 498.00 0.00 87,462.00 0.00 Peso Neto:"
+  // donde "PESO Kilos" es el header de la columna adyacente
+  if (!d.merma_zarandeo) {
+    // Patrón 1: "PESO Kilos 498.00" — el header de columna aparece antes del valor
+    const mzPeso = t.match(/PESO\s+Kilos?\s+([\d\.,]+)/i);
+    if (mzPeso) { d.merma_zarandeo = num(mzPeso[1]); }
+    else {
+      // Patrón 2: "Zarandeo:" seguido de texto no-$ hasta el primer número
+      const mzFb = t.match(/Zarandeo:\s*(?:[^0-9$\n]{0,40}?)(\d[\d\.,]+)/i);
+      if (mzFb) d.merma_zarandeo = num(mzFb[1]);
+    }
+  }
+  // Peso Neto: en pdfjs puede aparecer ANTES de la etiqueta "Peso Neto:"
+  // "87,462.00 0.00 Peso Neto:" → capturar número de 5+ dígitos antes del label
+  if (!d.kg_neto) {
+    const mnPre = t.match(/([\d]{2,3}[,\.][\d\.,]{5,})\s+(?:[\d\.,]+\s+){0,2}Peso\s+Neto/i);
+    if (mnPre) d.kg_neto = num(mnPre[1]);
+    else { m = t.match(/Peso\s+Neto:\s*([\d\.,]+)/i); if(m) d.kg_neto = num(m[1]); }
+  }
+  // Peso Bruto: si no se extrajo, calcularlo
+  if (!d.kg_bruto && d.kg_neto) {
+    d.kg_bruto = d.kg_neto + (d.merma_zarandeo||0) + (d.merma_secado||0) + (d.merma_volatil||0);
+  }
+  // Último recurso: calcular merma desde pesos bruto-neto
+  if (!d.merma_zarandeo && !d.merma_secado && !d.merma_volatil && d.kg_bruto && d.kg_neto) {
+    const diff = d.kg_bruto - d.kg_neto;
+    if (diff > 0) d.merma_zarandeo = diff;
+  }
+
+  d.merma_total = (d.merma_zarandeo||0) + (d.merma_volatil||0) + (d.merma_secado||0);
+
+  // ── SERVICIOS / COSTOS ────────────────────────────────────────────
+  // FUENTE 1 (más confiable): "Datos Adicionales" de página 2 — línea continua
+  // "Importe total comprobante: $19970.39"
+  m = t.match(/Importe total comprobante:\s*\$?\s*([\d.,]+)/i);
+  if (m) d.total_servicios = num(m[1]);
+  else {
+    // FUENTE 2: TOTAL: en bloque SERVICIOS (puede estar separado)
+    const mTot = [...t.matchAll(/TOTAL:\s*\$\s*([\d\.,]+)/gi)];
+    if (mTot.length) d.total_servicios = num(mTot[mTot.length-1][1]);
+  }
+
+  // Cptos. No Gravados: "Derecho de registro CBA: $565" en Datos Adicionales
+  m = t.match(/Derecho de registro[^:$\n]*:\s*\$?\s*([\d.,]+)/i);
+  if (m) d.cptos_no_gravados = num(m[1]);
+
+  // Percepción IVA: "Percepción IVA: $469.49" en Datos Adicionales
+  m = t.match(/Percep[ció]{2,4}n\s*IVA:\s*\$?\s*([\d.,]+)/i);
+  if (m) d.percepcion_iva = num(m[1]);
+
+  // Gastos Generales: pdfjs extrae "Gastos Generales: 21 % $ 15,649.50"
+  // el porcentaje de IVA queda entre el label y el valor $
+  m = t.match(/Gastos Generales:\s*[\d.,]*\s*%?\s*\$\s*([\d.,]+)/i);
+  if (!m) m = t.match(/Gastos Generales:[\s\S]{0,30}?\$\s*([\d.,]+)/i);
+  if (m) d.gastos_generales = num(m[1]);
+
+  // Importe IVA: directo o desde bloque "SERVICIOS $X $Y" de pdfjs
+  m = t.match(/Importe IVA:\s*\$\s*([\d\.,]+)/i);
+  if (!m) {
+    // pdfjs puede extraer: "SERVICIOS $ 3,286.39 $ 469.49" (IVA y Percepción juntos)
+    const mServIVA = t.match(/SERVICIOS\s+\$\s*([\d.,]+)\s+\$\s*([\d.,]+)/i);
+    if (mServIVA) m = [null, mServIVA[1]];
+  }
+  if (m) d.importe_iva = num(m[1]);
+  // Fallback: IVA = total - GG - cptos_no_gravados - percepcion_iva
+  if (!d.importe_iva && d.total_servicios && d.gastos_generales) {
+    const calc = d.total_servicios - (d.gastos_generales||0) - (d.cptos_no_gravados||0) - (d.percepcion_iva||0);
+    if (calc > 0) d.importe_iva = Math.round(calc * 100) / 100;
+  }
+
+  m = t.match(/Monto Secado:\s*\$\s*([\d\.,]+)/i); if(m) d.costo_secado = num(m[1]);
 
   return d;
 }
@@ -3960,10 +4902,26 @@ async function procesarPDFLiquidacion(input) {
       return;
     }
 
+    // Leer campaña seleccionada por el usuario
+    const selCampania = document.getElementById('liq-campania-sel');
+    const txtCampania = document.getElementById('liq-campania-nueva');
+    const campania = (txtCampania && txtCampania.value.trim())
+      ? txtCampania.value.trim()
+      : (selCampania && selCampania.value ? selCampania.value : '');
+
+    if (!campania) {
+      statusEl.innerHTML = '<div class="alert alert-warning">⚠️ Seleccioná o ingresá la campaña/cosecha antes de cargar la liquidación.</div>';
+      drop.className='pdf-drop'; drop.onclick=()=>document.getElementById('liq-input').click();
+      drop.innerHTML='<div class="pdf-drop-icon">📋</div><div class="pdf-drop-title">Seleccionar Liquidación</div><div class="pdf-drop-sub">C1116A / Liquidación Primaria de Granos</div>';
+      input.value = '';
+      return;
+    }
+
     acopios[clave].movimientos.push({
       tipo:'liquidacion',
       fecha: datos.fecha || new Date().toISOString().split('T')[0],
       coe: datos.coe||'', grano: datos.grano||'',
+      campania: campania,
       kg: datos.kg||0, precio_kg: datos.precio_kg||0,
       total_operacion: datos.total_operacion||0,
       deducciones: datos.deducciones||0,
@@ -3971,12 +4929,17 @@ async function procesarPDFLiquidacion(input) {
       neto_pagar: datos.neto_pagar||0,
       iva_rg4310: datos.iva_rg4310||0,
       pago_condiciones: datos.pago_condiciones||0,
+      comision: datos.comision||0,
+      comision_pct: datos.comision_pct||0,
     });
     guardarEstado();
     renderDetalleAcopio(clave);
     drop.className='pdf-drop loaded';
     drop.innerHTML=`<div class="pdf-drop-icon" style="font-size:22px">✅</div><div class="pdf-drop-title" style="color:var(--green)">${file.name}</div><div class="pdf-drop-sub" style="color:var(--green)">Liquidación registrada · <span style="text-decoration:underline;cursor:pointer" onclick="resetDrop('liq-drop','liq-input','📋','Seleccionar Liquidación','C1116A / Liquidación Primaria de Granos','procesarPDFLiquidacion')">Cargar otra</span></div>`;
-    statusEl.innerHTML=`<div class="alert alert-success">✅ Liquidación COE ${datos.coe||'—'} · ${(datos.kg||0).toLocaleString('es-AR')} kg · Neto: $${(datos.neto_pagar||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>`;
+    statusEl.innerHTML=`<div class="alert alert-success">✅ Liquidación COE ${datos.coe||'—'} · Campaña <strong>${campania}</strong> · ${(datos.kg||0).toLocaleString('es-AR')} kg · Neto: $${(datos.neto_pagar||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>`;
+    // Resetear campos de campaña
+    if (selCampania) selCampania.value = '';
+    if (txtCampania) txtCampania.value = '';
   } catch(err) {
     drop.className='pdf-drop'; drop.innerHTML='<div class="pdf-drop-icon">📋</div><div class="pdf-drop-title">Seleccionar Liquidación</div><div class="pdf-drop-sub">C1116A / Liquidación Primaria de Granos</div>';
     drop.onclick=()=>document.getElementById('liq-input').click();
@@ -4026,6 +4989,8 @@ async function procesarPDFCertificacion(input) {
       merma_secado: datos.merma_secado||0,
       merma_volatil: datos.merma_volatil||0,
       total_servicios: datos.total_servicios||0,
+      gastos_generales: datos.gastos_generales||0,
+      importe_iva: datos.importe_iva||0,
       ctgs: datos.ctgs||[],
     });
     guardarEstado();
@@ -4068,22 +5033,48 @@ function guardarPctSueldo(val) {
 
 function guardarTarifaChofer(val) {
   if (!choferActual || !choferes[choferActual]) return;
-  choferes[choferActual].tarifa_kg = parseFloat(val) || 0;
-  recalcularViajesChofer(choferActual);
+  const tarifa = parseFloat(val) || 0;
+  const c = choferes[choferActual];
+  // Guardar tarifa específica del mes actual
+  if (!c.tarifas_mes) c.tarifas_mes = {};
+  c.tarifas_mes[mesActualFletes] = tarifa;
+  // Si no había tarifa global, también la seteamos como default
+  if (!c.tarifa_kg) c.tarifa_kg = tarifa;
+  // Recalcular SOLO los viajes del mes actual
+  recalcularViajesMes(choferActual, mesActualFletes);
   guardarEstado();
   renderDetalleChofer(choferActual);
-  mostrarToast('💾 Tarifa actualizada');
+  mostrarToast('💾 Tarifa de ' + mesLabel(mesActualFletes) + ' actualizada');
+}
+
+function _getTarifaMes(clave, mes) {
+  const c = choferes[clave];
+  if (c.tarifas_mes && c.tarifas_mes[mes] !== undefined) return c.tarifas_mes[mes];
+  return c.tarifa_kg || 0;
 }
 
 function recalcularViajesChofer(clave) {
+  // Mantener compatibilidad — recalcula cada viaje con la tarifa de su mes
   if (!choferes[clave]) return;
-  const tarifa = choferes[clave].tarifa_kg || 0;
-  (choferes[clave].viajes || []).forEach(v => { v.flete = Math.round((v.kg||0) * tarifa); });
+  const c = choferes[clave];
+  (c.viajes || []).forEach(v => {
+    const mes    = v.fecha ? v.fecha.slice(0,7) : null;
+    const tarifa = mes ? _getTarifaMes(clave, mes) : (c.tarifa_kg || 0);
+    v.flete = Math.round((v.kg||0) * tarifa);
+  });
+}
+
+function recalcularViajesMes(clave, mes) {
+  if (!choferes[clave] || !mes) return;
+  const tarifa = _getTarifaMes(clave, mes);
+  (choferes[clave].viajes || [])
+    .filter(v => v.fecha && v.fecha.startsWith(mes))
+    .forEach(v => { v.flete = Math.round((v.kg||0) * tarifa); });
 }
 
 function recalcularViajes() {
   if (!choferActual) return;
-  recalcularViajesChofer(choferActual);
+  recalcularViajesMes(choferActual, mesActualFletes);
   guardarEstado();
   renderDetalleChofer(choferActual);
 }
@@ -4174,7 +5165,7 @@ function guardarEdicionViaje() {
   v.grano   = grano;
   v.kg      = kg;
   v.destino = destino;
-  v.flete   = Math.round(kg * (c.tarifa_kg || 0));
+  v.flete   = Math.round(kg * _getTarifaMes(clave, fecha.slice(0,7)));
 
   // Si el mes cambió, ir al nuevo mes y validar que exista en la lista
   if (mesBefore && mesAfter !== mesBefore) {
@@ -4255,6 +5246,11 @@ function abrirEditarBolson(bolsonId) {
   document.getElementById('edit-bolson-egresado').value        = b.egresado   || 0;
   document.getElementById('edit-bolson-alert').innerHTML       = '';
 
+  // Poblar y seleccionar ubicación
+  const ubSel = document.getElementById('edit-bolson-ubicacion');
+  ubSel.innerHTML = '<option value="">— Seleccionar campo —</option>' +
+    Object.keys(CAMPOS_DATA).map(c => `<option value="${c}"${c === (b.ubicacion||b.campo) ? ' selected' : ''}>${c}</option>`).join('');
+
   document.getElementById('edit-bolson-overlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -4269,6 +5265,7 @@ function guardarEdicionBolson() {
   const grano      = document.getElementById('edit-bolson-grano').value;
   const cosecha    = document.getElementById('edit-bolson-cosecha').value.trim();
   const numCampañaManual = parseInt(document.getElementById('edit-bolson-num-campaña').value);
+  const ubicacion  = document.getElementById('edit-bolson-ubicacion').value;
   const fecha      = document.getElementById('edit-bolson-fecha').value;
   const obs        = document.getElementById('edit-bolson-obs').value.trim();
   const newIng     = parseFloat(document.getElementById('edit-bolson-ingresado').value) || 0;
@@ -4288,6 +5285,7 @@ function guardarEdicionBolson() {
   b.obs       = obs;
   b.ingresado = newIng;
   b.egresado  = newEgr;
+  if (ubicacion) b.ubicacion = ubicacion;
   // Actualizar número de campaña si se editó manualmente
   if (numCampañaManual && numCampañaManual > 0) {
     b.numCampaña = numCampañaManual;
@@ -4374,7 +5372,7 @@ function renderFletes() {
     const s = calcularStatsChofer(k, mesActualFletes);
     return `<div class="chofer-card" onclick="verDetalleChofer('${k}')">
       <div class="chofer-card-name">${c.nombre||'Sin nombre'}</div>
-      <div class="chofer-card-dom">🚛 ${c.dominios||'—'} · Tarifa: $${(c.tarifa_kg||0).toLocaleString('es-AR')}/kg</div>
+      <div class="chofer-card-dom">🚛 ${c.dominios||'—'} · Tarifa ${mesLabel(mesActualFletes)}: $${(_getTarifaMes(k, mesActualFletes)||0).toLocaleString('es-AR')}/kg</div>
       <div class="chofer-stats">
         <div class="chofer-stat"><div class="chofer-stat-val">${s.viajes.length}</div><div class="chofer-stat-lbl">Viajes</div></div>
         <div class="chofer-stat"><div class="chofer-stat-val">${(s.totalKg/1000).toFixed(1)}t</div><div class="chofer-stat-lbl">Kg transp.</div></div>
@@ -4391,7 +5389,8 @@ function verDetalleChofer(clave) {
   const c = choferes[clave];
   document.getElementById('fdet-nombre').textContent = c.nombre || 'Sin nombre';
   document.getElementById('fdet-dom').textContent = '🚛 ' + (c.dominios||'—');
-  document.getElementById('tarifa-chofer-input').value = c.tarifa_kg || '';
+  // Cargar tarifa del mes actual
+  document.getElementById('tarifa-chofer-input').value = _getTarifaMes(clave, mesActualFletes) || c.tarifa_kg || '';
   renderDetalleChofer(clave);
 }
 
@@ -4416,6 +5415,19 @@ function renderDetalleChofer(clave) {
   mesSelEl.innerHTML = (meses.length ? meses : [mesActualFletes]).map(m =>
     `<button class="mes-btn${m===mesActualFletes?' active':''}" onclick="mesActualFletes='${m}';renderDetalleChofer('${clave}')">${mesLabel(m)}</button>`
   ).join('');
+
+  // Actualizar tarifa input con la tarifa del mes activo
+  const tarifaMes = _getTarifaMes(clave, mesActualFletes);
+  const tarifaInput = document.getElementById('tarifa-chofer-input');
+  if (tarifaInput) tarifaInput.value = tarifaMes || '';
+  const tarifaLabel = document.getElementById('tarifa-mes-label');
+  if (tarifaLabel) {
+    const esMesEspecifica = c.tarifas_mes && c.tarifas_mes[mesActualFletes] !== undefined;
+    tarifaLabel.textContent = esMesEspecifica
+      ? `(${mesLabel(mesActualFletes)} — específica)`
+      : `(${mesLabel(mesActualFletes)} — tarifa general)`;
+    tarifaLabel.style.color = esMesEspecifica ? 'var(--green)' : 'var(--text3)';
+  }
 
   const s = calcularStatsChofer(clave, mesActualFletes);
   const $f = n => '$' + Math.round(n).toLocaleString('es-AR');
@@ -4526,10 +5538,27 @@ function obtenerOCrearCamion(dominios, choferNombre) {
     camiones[clave] = {
       dominios: dominios.trim(), chofer_nombre: choferNombre || '',
       config: {
-        imp_prov:0, imp_mun:0, seg_cam:0, seg_acop:0, seg_carga:0, seg_art:0,
-        neu_cam_precio:0, neu_cam_vida:80000, neu_cam_cant:10,
-        neu_acop_precio:0, neu_acop_vida:80000, neu_acop_cant:12,
-        aceite_litros:20, aceite_precio:0, aceite_km:15000
+        fijos: FIJOS_DEFAULT.map(f => ({ ...f, importe: 0 })),
+        // Costos Variables
+        cubiertas: [
+          { nombre: 'Delanteras chasis',  cantidad: 2,  precio: 0, vida_util: 120000 },
+          { nombre: 'Tracción chasis',    cantidad: 4,  precio: 0, vida_util: 120000 },
+          { nombre: 'Acoplado',          cantidad: 16, precio: 0, vida_util: 120000 },
+        ],
+        gasoil: { precio_lt: 0, consumo_100km: 30 },
+        aceites: [
+          { nombre: 'Aceite motor',        capacidad: 26, precio_lt: 0, vida_util: 30000 },
+          { nombre: 'Aceite de caja',      capacidad: 20, precio_lt: 0, vida_util: 120000 },
+          { nombre: 'Aceite de diferencial', capacidad: 20, precio_lt: 0, vida_util: 120000 },
+        ],
+        filtros: [
+          { nombre: 'Filtro de aceite',        cantidad: 1, precio: 0, vida_util: 30000 },
+          { nombre: 'Filtro de gasoil',        cantidad: 1, precio: 0, vida_util: 30000 },
+          { nombre: 'Filtro trampa gasoil',    cantidad: 1, precio: 0, vida_util: 30000 },
+          { nombre: 'Filtro de aire',          cantidad: 1, precio: 0, vida_util: 30000 },
+          { nombre: 'Filtro de aire interno',  cantidad: 1, precio: 0, vida_util: 30000 },
+          { nombre: 'Filtro de secado',        cantidad: 1, precio: 0, vida_util: 30000 },
+        ],
       },
       meses: {}
     };
@@ -4545,48 +5574,87 @@ function mesDataCam(clave, mes) {
 }
 
 function calcularCostosCamion(clave, mes) {
-  const c  = camiones[clave];
+  const c   = camiones[clave];
   const cfg = c.config;
   const md  = mesDataCam(clave, mes);
-  const km  = md.km || 0;
 
-  // Costos fijos
-  const fijos = (cfg.imp_prov||0)+(cfg.imp_mun||0)+(cfg.seg_cam||0)+(cfg.seg_acop||0)+(cfg.seg_carga||0)+(cfg.seg_art||0);
+  // KM: calcular automáticamente desde viajes del chofer (840 km por viaje = 420 ida + 420 vuelta)
+  const KM_POR_VIAJE = 840;
+  const dominios = (c.dominios || '').toUpperCase();
+  let viajesMes = 0;
+  Object.values(choferes).forEach(ch => {
+    ch.viajes.forEach(v => {
+      if (!v.fecha || !v.fecha.startsWith(mes)) return;
+      const domV = (v.dominios || '').toUpperCase();
+      if (dominios && (domV.includes(dominios) || dominios.includes(domV))) viajesMes++;
+    });
+  });
+  const kmAuto = viajesMes * KM_POR_VIAJE;
+  const km = md.km_manual ? (md.km || 0) : kmAuto;
 
-  // Combustible
-  const combustible = (md.litros||0) * (md.precio_litro||0);
+  // COSTOS FIJOS: suma del array cfg.fijos (convertir anuales a mensual)
+  _initFijosConfig(clave);
+  const fijos = (cfg.fijos || []).reduce((sum, f) => {
+    const imp = (f.unidad === 'año') ? (f.importe / 12) : (f.importe || 0);
+    return sum + imp * (f.cantidad || 1);
+  }, 0);
 
-  // Neumáticos por km
-  const costo_neu_cam_km  = cfg.neu_cam_vida  > 0 ? (cfg.neu_cam_precio  * cfg.neu_cam_cant)  / cfg.neu_cam_vida  : 0;
-  const costo_neu_acop_km = cfg.neu_acop_vida > 0 ? (cfg.neu_acop_precio * cfg.neu_acop_cant) / cfg.neu_acop_vida : 0;
-  const neumaticos = Math.round((costo_neu_cam_km + costo_neu_acop_km) * km);
+  // COSTOS VARIABLES
+  _initVariablesConfig(clave);
 
-  // Aceite por km
-  const costo_aceite_km = cfg.aceite_km > 0 ? (cfg.aceite_litros * cfg.aceite_precio) / cfg.aceite_km : 0;
-  const aceite = Math.round(costo_aceite_km * km);
+  // Cubiertas: (precio × cantidad) / vida_util × km
+  const cubiertas = (cfg.cubiertas || []).reduce((sum, c) => {
+    const costo_km = c.vida_util > 0 ? (c.precio * c.cantidad) / c.vida_util : 0;
+    return sum + costo_km * km;
+  }, 0);
+
+  // Gasoil: desde cisterna o (km × consumo/100 × precio)
+  const cistData    = getLitrosCisternaCamion(clave, mes);
+  const combustible = cistData.costo > 0
+    ? cistData.costo
+    : km * ((cfg.gasoil.consumo_100km || 0) / 100) * (cfg.gasoil.precio_lt || 0);
+  const litrosComb  = cistData.litros > 0
+    ? cistData.litros
+    : Math.round(km * ((cfg.gasoil.consumo_100km || 0) / 100));
+
+  // Aceites: (precio_lt × capacidad) / vida_util × km
+  const aceites = (cfg.aceites || []).reduce((sum, a) => {
+    const costo_km = a.vida_util > 0 ? (a.precio_lt * a.capacidad) / a.vida_util : 0;
+    return sum + costo_km * km;
+  }, 0);
+
+  // Filtros: (precio × cantidad) / vida_util × km
+  const filtros = (cfg.filtros || []).reduce((sum, f) => {
+    const costo_km = f.vida_util > 0 ? (f.precio * f.cantidad) / f.vida_util : 0;
+    return sum + costo_km * km;
+  }, 0);
+
+  // Mantener nombres compatibles con el desglose
+  const neumaticos = Math.round(cubiertas);
+  const aceite     = Math.round(aceites + filtros);
 
   // Compras del mes
   const compras = (md.compras || []).reduce((a,c) => a + c.importe, 0);
-
-  // Sueldo chofer del mes
-  const sueldo = md.sueldo || 0;
+  const sueldo  = md.sueldo || 0;
 
   const total = fijos + combustible + neumaticos + aceite + compras + sueldo;
 
-  // Toneladas transportadas: buscar viajes del camión en choferes
-  const dominios = c.dominios;
+  // Toneladas transportadas: mismo match de dominios
   let kg_mes = 0;
   Object.values(choferes).forEach(ch => {
     ch.viajes.filter(v => v.fecha && v.fecha.startsWith(mes) &&
-      (v.dominios||'').toUpperCase().includes(dominios.toUpperCase()) ||
-      dominios.toUpperCase().includes((v.dominios||'').toUpperCase())
+      (dominios && ((v.dominios||'').toUpperCase().includes(dominios) ||
+       dominios.includes((v.dominios||'').toUpperCase())))
     ).forEach(v => { kg_mes += v.kg || 0; });
   });
-  const toneladas = kg_mes / 1000;
+  const toneladas    = kg_mes / 1000;
   const costo_por_ton = toneladas > 0 ? Math.round(total / toneladas) : 0;
   const costo_por_km  = km > 0 ? Math.round(total / km) : 0;
 
-  return { fijos, combustible, neumaticos, aceite, compras, sueldo, total, toneladas, costo_por_ton, costo_por_km, km };
+  return { fijos, combustible, neumaticos, aceite, cubiertas: Math.round(cubiertas),
+           aceites: Math.round(aceites), filtros: Math.round(filtros),
+           compras, sueldo, total, toneladas, costo_por_ton, costo_por_km,
+           km, kmAuto, viajesMes, litrosComb };
 }
 
 function mesesDisponiblesCam(clave) {
@@ -4696,30 +5764,362 @@ function camTab(tab) {
   if (tab==='config' && camionActual) cargarConfigEnForm(camionActual);
 }
 
-function cargarConfigEnForm(clave) {
+const FIJOS_DEFAULT = [
+  { concepto: 'Patente chasis',               cantidad: 1, unidad: 'mes' },
+  { concepto: 'Patente acoplado',             cantidad: 1, unidad: 'mes' },
+  { concepto: 'Seguro automotor chasis',      cantidad: 1, unidad: 'mes' },
+  { concepto: 'Seguro de carga chasis',       cantidad: 1, unidad: 'mes' },
+  { concepto: 'Seguro automotor acoplado',    cantidad: 1, unidad: 'mes' },
+  { concepto: 'Seguro de carga acoplado',     cantidad: 1, unidad: 'mes' },
+  { concepto: 'Seguro accidentes chofer',     cantidad: 1, unidad: 'mes' },
+  { concepto: 'Cargas sociales',              cantidad: 1, unidad: 'mes' },
+];
+
+function _initVariablesConfig(clave) {
   const cfg = camiones[clave].config;
-  const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v||''; };
-  set('cfg-imp-prov', cfg.imp_prov); set('cfg-imp-mun', cfg.imp_mun);
-  set('cfg-seg-cam', cfg.seg_cam);   set('cfg-seg-acop', cfg.seg_acop);
-  set('cfg-seg-carga', cfg.seg_carga); set('cfg-seg-art', cfg.seg_art);
-  set('cfg-neu-cam-precio', cfg.neu_cam_precio); set('cfg-neu-cam-vida', cfg.neu_cam_vida); set('cfg-neu-cam-cant', cfg.neu_cam_cant);
-  set('cfg-neu-acop-precio', cfg.neu_acop_precio); set('cfg-neu-acop-vida', cfg.neu_acop_vida); set('cfg-neu-acop-cant', cfg.neu_acop_cant);
-  set('cfg-aceite-litros', cfg.aceite_litros); set('cfg-aceite-precio', cfg.aceite_precio); set('cfg-aceite-km', cfg.aceite_km);
+  if (!cfg.cubiertas) cfg.cubiertas = [
+    { nombre: 'Delanteras chasis',  cantidad: 2,  precio: 0, vida_util: 120000 },
+    { nombre: 'Tracción chasis',    cantidad: 4,  precio: 0, vida_util: 120000 },
+    { nombre: 'Acoplado',          cantidad: 16, precio: 0, vida_util: 120000 },
+  ];
+  if (!cfg.gasoil)  cfg.gasoil  = { precio_lt: 0, consumo_100km: 30 };
+  if (!cfg.aceites) cfg.aceites = [
+    { nombre: 'Aceite motor',          capacidad: 26, precio_lt: 0, vida_util: 30000 },
+    { nombre: 'Aceite de caja',        capacidad: 20, precio_lt: 0, vida_util: 120000 },
+    { nombre: 'Aceite de diferencial', capacidad: 20, precio_lt: 0, vida_util: 120000 },
+  ];
+  if (!cfg.filtros) cfg.filtros = [
+    { nombre: 'Filtro de aceite',       cantidad: 1, precio: 0, vida_util: 30000 },
+    { nombre: 'Filtro de gasoil',       cantidad: 1, precio: 0, vida_util: 30000 },
+    { nombre: 'Filtro trampa gasoil',   cantidad: 1, precio: 0, vida_util: 30000 },
+    { nombre: 'Filtro de aire',         cantidad: 1, precio: 0, vida_util: 30000 },
+    { nombre: 'Filtro de aire interno', cantidad: 1, precio: 0, vida_util: 30000 },
+    { nombre: 'Filtro de secado',       cantidad: 1, precio: 0, vida_util: 30000 },
+  ];
+}
+
+function _initFijosConfig(clave) {
+  const cfg = camiones[clave].config;
+  if (!cfg.fijos || !cfg.fijos.length) {
+    cfg.fijos = FIJOS_DEFAULT.map(f => ({ ...f, importe: 0 }));
+  }
+}
+
+function cargarConfigEnForm(clave) {
+  _initFijosConfig(clave);
+  _initVariablesConfig(clave);
+  renderCostosFijosTabla(clave);
+  renderVariablesTablas(clave);
+}
+
+function renderVariablesTablas(clave) {
+  if (!clave || !camiones[clave]) return;
+  _initVariablesConfig(clave);
+  const cfg = camiones[clave].config;
+  const s   = calcularCostosCamion(clave, mesActualCam || new Date().toISOString().slice(0,7));
+  const km  = s.km || 0;
+  const ton = s.toneladas || 0;
+  const $f  = v => '$' + Math.round(v).toLocaleString('es-AR');
+  const n2  = v => v > 0 ? v.toFixed(2) : '—';
+
+  // ── CUBIERTAS ─────────────────────────────────────────────────
+  const contCub = document.getElementById('cfg-cubiertas-tabla');
+  if (contCub) {
+    const totalCub = cfg.cubiertas.reduce((s, c) => s + (c.vida_util > 0 ? (c.precio * c.cantidad / c.vida_util) * km : 0), 0);
+    contCub.innerHTML = `<table class="cf-table">
+      <thead><tr><th>Cubierta</th><th style="width:55px;text-align:center">Cant.</th><th style="width:120px;text-align:right">Precio $</th><th style="width:110px;text-align:right">Vida útil (km)</th><th style="width:110px;text-align:right">Costo/mes $</th><th style="width:70px;text-align:right">$/km</th><th style="width:80px;text-align:right">$/ton</th><th style="width:32px"></th></tr></thead>
+      <tbody>${cfg.cubiertas.map((c, i) => {
+        const costo = c.vida_util > 0 ? (c.precio * c.cantidad / c.vida_util) * km : 0;
+        const pkm   = km  > 0 && c.vida_util > 0 ? (c.precio * c.cantidad / c.vida_util) : 0;
+        const pton  = ton > 0 ? costo / ton : 0;
+        return `<tr>
+          <td><input class="cf-input" type="text" value="${c.nombre}" onchange="editarVariable('cubiertas','${clave}',${i},'nombre',this.value)"></td>
+          <td style="text-align:center"><input class="cf-input cf-cant" type="number" value="${c.cantidad}" min="1" onchange="editarVariable('cubiertas','${clave}',${i},'cantidad',this.value)"></td>
+          <td style="text-align:right"><input class="cf-input cf-imp" type="number" value="${c.precio||''}" placeholder="0" onchange="editarVariable('cubiertas','${clave}',${i},'precio',this.value)"></td>
+          <td style="text-align:right"><input class="cf-input cf-imp" style="width:100px" type="number" value="${c.vida_util||''}" placeholder="120000" onchange="editarVariable('cubiertas','${clave}',${i},'vida_util',this.value)"></td>
+          <td class="num-col green">${costo > 0 ? $f(costo) : '—'}</td>
+          <td class="num-col">${n2(pkm)}</td>
+          <td class="num-col">${n2(pton)}</td>
+          <td><button onclick="eliminarVariable('cubiertas','${clave}',${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px">×</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+      <tfoot><tr class="cf-total-row"><td colspan="4"><strong>TOTAL CUBIERTAS</strong></td><td class="num-col green">${$f(totalCub)}</td><td class="num-col green">${km>0 ? (totalCub/km).toFixed(2) : '—'}</td><td class="num-col green">${ton>0 ? (totalCub/ton).toFixed(2) : '—'}</td><td></td></tr></tfoot>
+    </table>`;
+  }
+
+  // ── GASOIL ────────────────────────────────────────────────────
+  const contGas = document.getElementById('cfg-gasoil-tabla');
+  if (contGas) {
+    const lts   = km * (cfg.gasoil.consumo_100km / 100);
+    const costo = s.combustible;
+    const pkm   = lts > 0 && cfg.gasoil.precio_lt > 0 ? (cfg.gasoil.consumo_100km / 100) * cfg.gasoil.precio_lt : 0;
+    const pton  = ton > 0 ? costo / ton : 0;
+    contGas.innerHTML = `<table class="cf-table">
+      <thead><tr><th>Concepto</th><th style="width:130px;text-align:right">Precio ($/lt)</th><th style="width:130px;text-align:right">Consumo (lts/100km)</th><th style="width:100px;text-align:right">Lts/mes</th><th style="width:110px;text-align:right">Costo/mes $</th><th style="width:70px;text-align:right">$/km</th><th style="width:80px;text-align:right">$/ton</th></tr></thead>
+      <tbody><tr>
+        <td>Gasoil</td>
+        <td style="text-align:right"><input class="cf-input cf-imp" type="number" value="${cfg.gasoil.precio_lt||''}" placeholder="0" onchange="editarGasoil('${clave}','precio_lt',this.value)"></td>
+        <td style="text-align:right"><input class="cf-input cf-imp" style="width:80px" type="number" value="${cfg.gasoil.consumo_100km||''}" placeholder="30" onchange="editarGasoil('${clave}','consumo_100km',this.value)"></td>
+        <td class="num-col">${km > 0 ? Math.round(lts).toLocaleString('es-AR') : '—'}</td>
+        <td class="num-col green">${costo > 0 ? $f(costo) : '—'}</td>
+        <td class="num-col">${n2(pkm)}</td>
+        <td class="num-col">${n2(pton)}</td>
+      </tr></tbody>
+    </table>`;
+  }
+
+  // ── ACEITES ──────────────────────────────────────────────────
+  const contAce = document.getElementById('cfg-aceites-tabla');
+  if (contAce) {
+    const totalAce = cfg.aceites.reduce((s, a) => s + (a.vida_util > 0 ? (a.precio_lt * a.capacidad / a.vida_util) * km : 0), 0);
+    contAce.innerHTML = `<table class="cf-table">
+      <thead><tr><th>Lubricante</th><th style="width:90px;text-align:right">Cap. (lts)</th><th style="width:110px;text-align:right">Precio $/lt</th><th style="width:110px;text-align:right">Vida útil (km)</th><th style="width:110px;text-align:right">Costo/mes $</th><th style="width:70px;text-align:right">$/km</th><th style="width:80px;text-align:right">$/ton</th><th style="width:32px"></th></tr></thead>
+      <tbody>${cfg.aceites.map((a, i) => {
+        const costo = a.vida_util > 0 ? (a.precio_lt * a.capacidad / a.vida_util) * km : 0;
+        const pkm   = a.vida_util > 0 ? (a.precio_lt * a.capacidad / a.vida_util) : 0;
+        const pton  = ton > 0 ? costo / ton : 0;
+        return `<tr>
+          <td><input class="cf-input" type="text" value="${a.nombre}" onchange="editarVariable('aceites','${clave}',${i},'nombre',this.value)"></td>
+          <td style="text-align:right"><input class="cf-input cf-imp" style="width:70px" type="number" value="${a.capacidad||''}" onchange="editarVariable('aceites','${clave}',${i},'capacidad',this.value)"></td>
+          <td style="text-align:right"><input class="cf-input cf-imp" type="number" value="${a.precio_lt||''}" placeholder="0" onchange="editarVariable('aceites','${clave}',${i},'precio_lt',this.value)"></td>
+          <td style="text-align:right"><input class="cf-input cf-imp" style="width:100px" type="number" value="${a.vida_util||''}" placeholder="30000" onchange="editarVariable('aceites','${clave}',${i},'vida_util',this.value)"></td>
+          <td class="num-col green">${costo > 0 ? $f(costo) : '—'}</td>
+          <td class="num-col">${n2(pkm)}</td>
+          <td class="num-col">${n2(pton)}</td>
+          <td><button onclick="eliminarVariable('aceites','${clave}',${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px">×</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+      <tfoot><tr class="cf-total-row"><td colspan="4"><strong>TOTAL ACEITES</strong></td><td class="num-col green">${$f(totalAce)}</td><td class="num-col green">${km>0 ? (totalAce/km).toFixed(2) : '—'}</td><td class="num-col green">${ton>0 ? (totalAce/ton).toFixed(2) : '—'}</td><td></td></tr></tfoot>
+    </table>`;
+  }
+
+  // ── FILTROS ──────────────────────────────────────────────────
+  const contFil = document.getElementById('cfg-filtros-tabla');
+  if (contFil) {
+    const totalFil = cfg.filtros.reduce((s, f) => s + (f.vida_util > 0 ? (f.precio * f.cantidad / f.vida_util) * km : 0), 0);
+    contFil.innerHTML = `<table class="cf-table">
+      <thead><tr><th>Filtro</th><th style="width:55px;text-align:center">Cant.</th><th style="width:120px;text-align:right">Precio unit. $</th><th style="width:110px;text-align:right">Vida útil (km)</th><th style="width:110px;text-align:right">Costo/mes $</th><th style="width:70px;text-align:right">$/km</th><th style="width:80px;text-align:right">$/ton</th><th style="width:32px"></th></tr></thead>
+      <tbody>${cfg.filtros.map((f, i) => {
+        const costo = f.vida_util > 0 ? (f.precio * f.cantidad / f.vida_util) * km : 0;
+        const pkm   = f.vida_util > 0 ? (f.precio * f.cantidad / f.vida_util) : 0;
+        const pton  = ton > 0 ? costo / ton : 0;
+        return `<tr>
+          <td><input class="cf-input" type="text" value="${f.nombre}" onchange="editarVariable('filtros','${clave}',${i},'nombre',this.value)"></td>
+          <td style="text-align:center"><input class="cf-input cf-cant" type="number" value="${f.cantidad||1}" min="1" onchange="editarVariable('filtros','${clave}',${i},'cantidad',this.value)"></td>
+          <td style="text-align:right"><input class="cf-input cf-imp" type="number" value="${f.precio||''}" placeholder="0" onchange="editarVariable('filtros','${clave}',${i},'precio',this.value)"></td>
+          <td style="text-align:right"><input class="cf-input cf-imp" style="width:100px" type="number" value="${f.vida_util||''}" placeholder="30000" onchange="editarVariable('filtros','${clave}',${i},'vida_util',this.value)"></td>
+          <td class="num-col green">${costo > 0 ? $f(costo) : '—'}</td>
+          <td class="num-col">${n2(pkm)}</td>
+          <td class="num-col">${n2(pton)}</td>
+          <td><button onclick="eliminarVariable('filtros','${clave}',${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px">×</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+      <tfoot><tr class="cf-total-row"><td colspan="4"><strong>TOTAL FILTROS</strong></td><td class="num-col green">${$f(totalFil)}</td><td class="num-col green">${km>0 ? (totalFil/km).toFixed(2) : '—'}</td><td class="num-col green">${ton>0 ? (totalFil/ton).toFixed(2) : '—'}</td><td></td></tr></tfoot>
+    </table>`;
+  }
+}
+
+function editarVariable(tipo, clave, idx, campo, valor) {
+  _initVariablesConfig(clave);
+  const item = camiones[clave].config[tipo][idx];
+  if (!item) return;
+  const numCampos = { cantidad:1, precio:1, vida_util:1, capacidad:1, precio_lt:1, consumo_100km:1 };
+  item[campo] = numCampos[campo] ? (parseFloat(valor) || 0) : valor;
+  guardarEstado();
+  renderVariablesTablas(clave);
+  renderDetalleCamion(clave);
+}
+
+function editarGasoil(clave, campo, valor) {
+  _initVariablesConfig(clave);
+  camiones[clave].config.gasoil[campo] = parseFloat(valor) || 0;
+  guardarEstado();
+  renderVariablesTablas(clave);
+  renderDetalleCamion(clave);
+}
+
+function eliminarVariable(tipo, clave, idx) {
+  _initVariablesConfig(clave);
+  camiones[clave].config[tipo].splice(idx, 1);
+  guardarEstado();
+  renderVariablesTablas(clave);
+  mostrarToast('🗑️ Eliminado');
+}
+
+function agregarVariable(tipo) {
+  if (!camionActual) return;
+  _initVariablesConfig(camionActual);
+  const cfg = camiones[camionActual].config;
+
+  if (tipo === 'cubiertas') {
+    const nombre   = document.getElementById('cfg-new-cub-nombre').value.trim();
+    const cantidad = parseFloat(document.getElementById('cfg-new-cub-cant').value) || 1;
+    const precio   = parseFloat(document.getElementById('cfg-new-cub-precio').value) || 0;
+    const vida     = parseFloat(document.getElementById('cfg-new-cub-vida').value) || 120000;
+    if (!nombre) { mostrarToast('⚠️ Ingresá el nombre'); return; }
+    cfg.cubiertas.push({ nombre, cantidad, precio, vida_util: vida });
+    ['cfg-new-cub-nombre','cfg-new-cub-cant','cfg-new-cub-precio','cfg-new-cub-vida'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  } else if (tipo === 'aceites') {
+    const nombre   = document.getElementById('cfg-new-ace-nombre').value.trim();
+    const cap      = parseFloat(document.getElementById('cfg-new-ace-cap').value) || 0;
+    const precio   = parseFloat(document.getElementById('cfg-new-ace-precio').value) || 0;
+    const vida     = parseFloat(document.getElementById('cfg-new-ace-vida').value) || 30000;
+    if (!nombre) { mostrarToast('⚠️ Ingresá el nombre'); return; }
+    cfg.aceites.push({ nombre, capacidad: cap, precio_lt: precio, vida_util: vida });
+    ['cfg-new-ace-nombre','cfg-new-ace-cap','cfg-new-ace-precio','cfg-new-ace-vida'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  } else if (tipo === 'filtros') {
+    const nombre   = document.getElementById('cfg-new-fil-nombre').value.trim();
+    const cantidad = parseFloat(document.getElementById('cfg-new-fil-cant').value) || 1;
+    const precio   = parseFloat(document.getElementById('cfg-new-fil-precio').value) || 0;
+    const vida     = parseFloat(document.getElementById('cfg-new-fil-vida').value) || 30000;
+    if (!nombre) { mostrarToast('⚠️ Ingresá el nombre'); return; }
+    cfg.filtros.push({ nombre, cantidad, precio, vida_util: vida });
+    ['cfg-new-fil-nombre','cfg-new-fil-cant','cfg-new-fil-precio','cfg-new-fil-vida'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  }
+
+  guardarEstado();
+  renderVariablesTablas(camionActual);
+  mostrarToast('✅ Concepto agregado');
+}
+
+function renderCostosFijosTabla(clave) {
+  const cont = document.getElementById('cfg-fijos-tabla');
+  if (!cont || !camionActual) return;
+  _initFijosConfig(clave);
+  const cfg   = camiones[clave].config;
+  const fijos = cfg.fijos;
+
+  // Obtener km y toneladas del mes actual para calcular $/km y $/ton
+  const s   = calcularCostosCamion(clave, mesActualCam || new Date().toISOString().slice(0,7));
+  const km  = s.km  || 0;
+  const ton = s.toneladas || 0;
+
+  const totalFijos = fijos.reduce((sum, f) => {
+    const imp = (f.unidad === 'año') ? (f.importe / 12) : f.importe;
+    return sum + (imp * (f.cantidad || 1));
+  }, 0);
+
+  const $f = v => '$' + Math.round(v).toLocaleString('es-AR');
+  const n2 = v => v > 0 ? v.toFixed(2) : '—';
+
+  cont.innerHTML = `
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th style="width:55px;text-align:center">Cant.</th>
+          <th style="width:70px">Unidad</th>
+          <th style="width:120px;text-align:right">Importe ($)</th>
+          <th style="width:80px;text-align:right">$/km</th>
+          <th style="width:90px;text-align:right">$/tonelada</th>
+          <th style="width:32px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${fijos.map((f, i) => {
+          const impMensual = (f.unidad === 'año') ? (f.importe / 12) : f.importe;
+          const total      = impMensual * (f.cantidad || 1);
+          const pkm        = km  > 0 ? total / km  : 0;
+          const pton       = ton > 0 ? total / ton : 0;
+          return `<tr>
+            <td><input class="cf-input" type="text" value="${f.concepto}" onchange="editarFijo('${clave}',${i},'concepto',this.value)"></td>
+            <td style="text-align:center"><input class="cf-input cf-cant" type="number" value="${f.cantidad||1}" min="1" onchange="editarFijo('${clave}',${i},'cantidad',this.value)"></td>
+            <td>
+              <select class="cf-unidad" onchange="editarFijo('${clave}',${i},'unidad',this.value)">
+                <option value="mes"${f.unidad==='mes'?' selected':''}>mes</option>
+                <option value="año"${f.unidad==='año'?' selected':''}>año</option>
+              </select>
+            </td>
+            <td style="text-align:right"><input class="cf-input cf-imp" type="number" value="${f.importe||''}" placeholder="0" onchange="editarFijo('${clave}',${i},'importe',this.value)"></td>
+            <td class="num-col">${n2(pkm)}</td>
+            <td class="num-col">${n2(pton)}</td>
+            <td><button onclick="eliminarFijo('${clave}',${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px" title="Eliminar">×</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+      <tfoot>
+        <tr class="cf-total-row">
+          <td colspan="3"><strong>TOTAL COSTOS FIJOS</strong></td>
+          <td class="num-col green">${$f(totalFijos)}</td>
+          <td class="num-col green">${km>0 ? (totalFijos/km).toFixed(2) : '—'}</td>
+          <td class="num-col green">${ton>0 ? (totalFijos/ton).toFixed(2) : '—'}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>`;
+}
+
+function editarFijo(clave, idx, campo, valor) {
+  _initFijosConfig(clave);
+  const f = camiones[clave].config.fijos[idx];
+  if (!f) return;
+  if (campo === 'importe' || campo === 'cantidad') f[campo] = parseFloat(valor) || 0;
+  else f[campo] = valor;
+  guardarEstado();
+  renderCostosFijosTabla(clave);
+}
+
+function eliminarFijo(clave, idx) {
+  _initFijosConfig(clave);
+  camiones[clave].config.fijos.splice(idx, 1);
+  guardarEstado();
+  renderCostosFijosTabla(clave);
+  mostrarToast('🗑️ Concepto eliminado');
+}
+
+function agregarCostoFijo() {
+  if (!camionActual) return;
+  _initFijosConfig(camionActual);
+  const concepto = document.getElementById('cfg-new-concepto').value.trim();
+  const cantidad = parseFloat(document.getElementById('cfg-new-cant').value) || 1;
+  const unidad   = document.getElementById('cfg-new-unidad').value;
+  const importe  = parseFloat(document.getElementById('cfg-new-importe').value) || 0;
+  if (!concepto) { mostrarToast('⚠️ Ingresá el nombre del concepto'); return; }
+  camiones[camionActual].config.fijos.push({ concepto, cantidad, unidad, importe });
+  document.getElementById('cfg-new-concepto').value = '';
+  document.getElementById('cfg-new-cant').value     = '';
+  document.getElementById('cfg-new-importe').value  = '';
+  guardarEstado();
+  renderCostosFijosTabla(camionActual);
+  mostrarToast('✅ Concepto agregado');
 }
 
 function guardarConfig() {
   if (!camionActual) return;
-  const get = id => parseFloat(document.getElementById(id)?.value) || 0;
-  camiones[camionActual].config = {
-    imp_prov: get('cfg-imp-prov'), imp_mun: get('cfg-imp-mun'),
-    seg_cam: get('cfg-seg-cam'),   seg_acop: get('cfg-seg-acop'),
-    seg_carga: get('cfg-seg-carga'), seg_art: get('cfg-seg-art'),
-    neu_cam_precio: get('cfg-neu-cam-precio'), neu_cam_vida: get('cfg-neu-cam-vida')||80000, neu_cam_cant: get('cfg-neu-cam-cant')||10,
-    neu_acop_precio: get('cfg-neu-acop-precio'), neu_acop_vida: get('cfg-neu-acop-vida')||80000, neu_acop_cant: get('cfg-neu-acop-cant')||12,
-    aceite_litros: get('cfg-aceite-litros')||20, aceite_precio: get('cfg-aceite-precio'), aceite_km: get('cfg-aceite-km')||15000,
-  };
   guardarEstado();
   mostrarToast('💾 Configuración guardada');
+}
+
+function editarKmManual(clave) {
+  if (!mesActualCam) return;
+  const md = mesDataCam(clave, mesActualCam);
+  md.km_manual = true;
+  guardarEstado();
+  renderDetalleCamion(clave);
+}
+
+function resetKmAuto(clave) {
+  if (!mesActualCam) return;
+  const md = mesDataCam(clave, mesActualCam);
+  md.km_manual = false;
+  guardarEstado();
+  renderDetalleCamion(clave);
+}
+
+function editarLitrosManual(clave) {
+  if (!mesActualCam) return;
+  const md = mesDataCam(clave, mesActualCam);
+  md.litros_manual = true;
+  guardarEstado();
+  renderDetalleCamion(clave);
+}
+
+function resetLitrosAuto(clave) {
+  if (!mesActualCam) return;
+  const md = mesDataCam(clave, mesActualCam);
+  md.litros_manual = false;
+  guardarEstado();
+  renderDetalleCamion(clave);
 }
 
 function resetSueldoAuto(clave) {
@@ -4728,6 +6128,26 @@ function resetSueldoAuto(clave) {
   guardarEstado();
   renderDetalleCamion(clave);
   mostrarToast('🔄 Sueldo restaurado al automático');
+}
+
+function getLitrosCisternaCamion(clave, mes) {
+  // Suma los litros de retiros de cisterna cuyo equipo coincida con los dominios del camión
+  const domCam = (camiones[clave]?.dominios || '').toUpperCase().replace(/\s+/g, '');
+  if (!domCam) return { litros: 0, costo: 0 };
+
+  let litros = 0, costo = 0;
+  (cisterna.movimientos || []).forEach(m => {
+    if (m.tipo !== 'retiro') return;
+    if (!m.fecha || !m.fecha.startsWith(mes)) return;
+    const domEq = (m.equipo || '').toUpperCase().replace(/\s+/g, '');
+    if (!domEq) return;
+    // Match parcial: KMT060 matchea KMT060-VOH576 y viceversa
+    if (domCam.includes(domEq) || domEq.includes(domCam)) {
+      litros += m.litros || 0;
+      costo  += m.costo_total || 0;
+    }
+  });
+  return { litros: Math.round(litros * 10) / 10, costo: Math.round(costo) };
 }
 
 function getSueldoAutoChofer(clave, mes) {
@@ -4746,13 +6166,22 @@ function getSueldoAutoChofer(clave, mes) {
 }
 
 function guardarDatosMes(manual = false) {
-  if (!camionActual || !mesActualCam) return;
+  if (!camionActual) return;
+  if (!mesActualCam) mesActualCam = new Date().toISOString().slice(0, 7);
   const get = id => parseFloat(document.getElementById(id)?.value) || 0;
   const md = mesDataCam(camionActual, mesActualCam);
-  md.km = get('cam-km-mes');
-  md.litros = get('cam-litros-mes');
-  md.precio_litro = get('cam-precio-litro');
-  // Si el usuario editó manualmente → marcar como override
+
+  // KM: si el valor cambió respecto al auto → marcar como manual
+  const newKm = get('cam-km-mes');
+  const s = calcularCostosCamion(camionActual, mesActualCam);
+  if (newKm !== s.kmAuto && newKm !== 0) md.km_manual = true;
+  md.km = newKm;
+
+  const newLitros = get('cam-litros-mes');
+  const cistLitros = getLitrosCisternaCamion(camionActual, mesActualCam);
+  if (newLitros !== cistLitros.litros && newLitros !== 0) md.litros_manual = true;
+  md.litros = newLitros;
+
   if (manual) md.sueldo_manual = true;
   md.sueldo = get('cam-sueldo-mes');
   guardarEstado();
@@ -4760,16 +6189,19 @@ function guardarDatosMes(manual = false) {
 }
 
 function agregarCompra() {
-  if (!camionActual || !mesActualCam) return;
+  if (!camionActual) return;
+  // Asegurar que mesActualCam esté seteado
+  if (!mesActualCam) mesActualCam = new Date().toISOString().slice(0, 7);
   const det = document.getElementById('cam-compra-det').value.trim();
   const imp = parseFloat(document.getElementById('cam-compra-imp').value);
   const alEl = document.getElementById('cam-compra-alert');
   if (!det || !imp || imp <= 0) { alEl.innerHTML='<div class="alert alert-danger">Completá detalle e importe.</div>'; return; }
   const md = mesDataCam(camionActual, mesActualCam);
+  if (!md.compras) md.compras = [];
   md.compras.push({ detalle: det, importe: imp });
   document.getElementById('cam-compra-det').value = '';
   document.getElementById('cam-compra-imp').value = '';
-  alEl.innerHTML = '';
+  alEl.innerHTML = `<div class="alert alert-success" style="font-size:12px">✅ Compra agregada: ${det} — $${imp.toLocaleString('es-AR')}</div>`;
   guardarEstado();
   renderDetalleCamion(camionActual);
 }
@@ -4802,8 +6234,54 @@ function renderDetalleCamion(clave) {
 
   // Cargar datos del mes en inputs
   const setV = (id,v) => { const el=document.getElementById(id); if(el) el.value=v||''; };
-  setV('cam-km-mes', md.km||''); setV('cam-litros-mes', md.litros||'');
-  setV('cam-precio-litro', md.precio_litro||'');
+
+  // KM: auto desde viajes del chofer (840 km por viaje) — usa s ya calculado arriba
+  const kmInput = document.getElementById('cam-km-mes');
+  const kmBadge = document.getElementById('cam-km-badge');
+  const kmHint  = document.getElementById('cam-km-hint');
+  if (!md.km_manual && s.kmAuto >= 0) {
+    md.km = s.kmAuto;
+    if (kmInput) { kmInput.value = s.kmAuto; kmInput.style.borderColor = 'var(--green)'; }
+    if (kmBadge) { kmBadge.textContent = 'AUTO'; kmBadge.style.cssText = 'font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;margin-left:4px;background:var(--green-bg);color:var(--green)'; }
+    if (kmHint)  { kmHint.innerHTML = `${s.viajesMes} viaje${s.viajesMes!==1?'s':''} × 840 km = <strong>${s.kmAuto.toLocaleString('es-AR')} km</strong>. <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="editarKmManual('${clave}')">Editar</span>`; kmHint.style.color='var(--green)'; }
+  } else if (md.km_manual) {
+    if (kmInput) { kmInput.value = md.km || ''; kmInput.style.borderColor = 'var(--amber)'; }
+    if (kmBadge) { kmBadge.textContent = 'MANUAL'; kmBadge.style.cssText = 'font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;margin-left:4px;background:var(--amber-bg);color:var(--amber)'; }
+    if (kmHint)  { kmHint.innerHTML = `Editado manualmente. Auto calcularía ${s.kmAuto.toLocaleString('es-AR')} km (${s.viajesMes} viaje${s.viajesMes!==1?'s':''}). <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="resetKmAuto('${clave}')">Restaurar auto</span>`; kmHint.style.color='var(--amber)'; }
+  } else {
+    if (kmInput) { kmInput.value = md.km || ''; kmInput.style.borderColor = ''; }
+    if (kmBadge) { kmBadge.textContent = ''; kmBadge.style.cssText = ''; }
+    if (kmHint)  { kmHint.textContent = 'Sin viajes registrados para este camión en el mes.'; kmHint.style.color='var(--text3)'; }
+  }
+
+  // LITROS: auto desde cisterna si hay retiros registrados para este camión
+  const cistLitros = getLitrosCisternaCamion(clave, mesActualCam);
+  const litrosInput  = document.getElementById('cam-litros-mes');
+  const litrosBadge  = document.getElementById('cam-litros-badge');
+  const litrosHint   = document.getElementById('cam-litros-hint');
+
+  if (cistLitros.litros > 0 && !md.litros_manual) {
+    md.litros = cistLitros.litros;
+    if (litrosInput) { litrosInput.value = cistLitros.litros; litrosInput.style.borderColor = 'var(--green)'; }
+    if (litrosBadge) { litrosBadge.textContent = 'CISTERNA'; litrosBadge.style.cssText = 'font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;margin-left:4px;background:var(--green-bg);color:var(--green)'; }
+    if (litrosHint)  {
+      litrosHint.innerHTML = `${cistLitros.litros.toLocaleString('es-AR')} L · Costo total: <strong>$${cistLitros.costo.toLocaleString('es-AR')}</strong>. <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="editarLitrosManual('${clave}')">Editar</span>`;
+      litrosHint.style.color = 'var(--green)';
+    }
+  } else if (md.litros_manual) {
+    if (litrosInput) { litrosInput.value = md.litros || ''; litrosInput.style.borderColor = 'var(--amber)'; }
+    if (litrosBadge) { litrosBadge.textContent = 'MANUAL'; litrosBadge.style.cssText = 'font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;margin-left:4px;background:var(--amber-bg);color:var(--amber)'; }
+    if (litrosHint)  {
+      litrosHint.innerHTML = cistLitros.litros > 0
+        ? `Editado manualmente. Cisterna registra ${cistLitros.litros.toLocaleString('es-AR')} L · $${cistLitros.costo.toLocaleString('es-AR')}. <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="resetLitrosAuto('${clave}')">Restaurar cisterna</span>`
+        : `Editado manualmente. <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="resetLitrosAuto('${clave}')">Restaurar auto</span>`;
+      litrosHint.style.color = 'var(--amber)';
+    }
+  } else {
+    if (litrosInput) { litrosInput.value = md.litros || ''; litrosInput.style.borderColor = ''; }
+    if (litrosBadge) { litrosBadge.textContent = ''; litrosBadge.style.cssText = ''; }
+    if (litrosHint)  { litrosHint.textContent = 'Sin retiros de cisterna para este camión en el mes.'; litrosHint.style.color = 'var(--text3)'; }
+  }
 
   // Sueldo: auto desde módulo choferes si no fue editado manualmente
   const auto = getSueldoAutoChofer(clave, mesActualCam);
@@ -4846,18 +6324,51 @@ function renderDetalleCamion(clave) {
     </tr>`).join('');
   }
 
-  // Desglose
+  // Desglose — costos fijos desde el array cfg.fijos
+  _initFijosConfig(clave);
+  _initVariablesConfig(clave);
+  const fijoRows = (camiones[clave].config.fijos || [])
+    .filter(f => f.importe > 0)
+    .map(f => ({
+      cat: 'fijo',
+      label: f.concepto + (f.unidad === 'año' ? ' (÷12)' : ''),
+      val: ((f.unidad === 'año') ? (f.importe / 12) : f.importe) * (f.cantidad || 1)
+    }));
+
+  // Cubiertas individuales
+  const cubiertaRows = (camiones[clave].config.cubiertas || [])
+    .filter(c => c.precio > 0 && s.km > 0)
+    .map(c => ({
+      cat: 'var',
+      label: `Cubiertas ${c.nombre} (${c.cantidad} × $${c.precio.toLocaleString('es-AR')} / ${(c.vida_util/1000)}k km)`,
+      val: Math.round((c.precio * c.cantidad) / c.vida_util * s.km)
+    }));
+
+  // Aceites individuales
+  const aceiteRows = (camiones[clave].config.aceites || [])
+    .filter(a => a.precio_lt > 0 && s.km > 0)
+    .map(a => ({
+      cat: 'km',
+      label: `${a.nombre} (${a.capacidad}L × $${a.precio_lt.toLocaleString('es-AR')} / ${(a.vida_util/1000)}k km)`,
+      val: Math.round((a.precio_lt * a.capacidad) / a.vida_util * s.km)
+    }));
+
+  // Filtros individuales
+  const filtroRows = (camiones[clave].config.filtros || [])
+    .filter(f => f.precio > 0 && s.km > 0)
+    .map(f => ({
+      cat: 'km',
+      label: `${f.nombre} (${f.cantidad} u × $${f.precio.toLocaleString('es-AR')} / ${(f.vida_util/1000)}k km)`,
+      val: Math.round((f.precio * f.cantidad) / f.vida_util * s.km)
+    }));
+
   const rows = [
-    { cat:'fijo',   label:'Impuesto provincial',    val: camiones[clave].config.imp_prov },
-    { cat:'fijo',   label:'Impuesto municipal',      val: camiones[clave].config.imp_mun },
-    { cat:'fijo',   label:'Seguro camión',           val: camiones[clave].config.seg_cam },
-    { cat:'fijo',   label:'Seguro acoplado',         val: camiones[clave].config.seg_acop },
-    { cat:'fijo',   label:'Seguro de carga',         val: camiones[clave].config.seg_carga },
-    { cat:'fijo',   label:'Seguro ART chofer',       val: camiones[clave].config.seg_art },
+    ...fijoRows,
     { cat:'sueldo', label:'Sueldo chofer',            val: s.sueldo },
-    { cat:'var',    label:`Combustible (${md.litros||0}L × $${md.precio_litro||0})`, val: s.combustible },
-    { cat:'km',     label:`Neumáticos (${s.km.toLocaleString('es-AR')} km)`,         val: s.neumaticos },
-    { cat:'km',     label:`Aceite motor (${s.km.toLocaleString('es-AR')} km)`,       val: s.aceite },
+    { cat:'var',    label:`Gasoil (${s.litrosComb||0} L · ${$f(s.combustible)})`, val: s.combustible },
+    ...cubiertaRows,
+    ...aceiteRows,
+    ...filtroRows,
     ...(md.compras||[]).map(c => ({ cat:'var', label: c.detalle, val: c.importe })),
   ].filter(r => r.val > 0);
 
@@ -5145,29 +6656,61 @@ function inicializarRetiro() {
   const fd  = document.getElementById('ret-fecha'); if (fd && !fd.value) fd.value = hoy;
   _retFotoBase64 = null;
   document.getElementById('ret-foto-preview').innerHTML = '';
+  // Reset campos custom
+  const caw = document.getElementById('ret-custom-act-wrap'); if(caw) caw.style.display='none';
+  const ca  = document.getElementById('ret-custom-act'); if(ca) ca.value='';
+  const ec  = document.getElementById('ret-equipo-custom'); if(ec){ec.style.display='none';ec.value='';}
+  const ew  = document.getElementById('ret-equipo-wrap'); if(ew) ew.style.display='block';
   actualizarDestinosRetiro();
 }
 
 function actualizarDestinosRetiro() {
   const act = document.getElementById('ret-actividad').value;
   const sel = document.getElementById('ret-equipo');
+  const customActWrap = document.getElementById('ret-custom-act-wrap');
+  const equipoWrap = document.getElementById('ret-equipo-wrap');
+  const equipoCustom = document.getElementById('ret-equipo-custom');
+  const gestionBtn = document.getElementById('ret-gestionar-equipos');
+
+  // Mostrar/ocultar campo de actividad personalizada
+  if (customActWrap) customActWrap.style.display = act === 'custom' ? 'block' : 'none';
+
+  // Para actividades custom o "otro", usar texto libre para equipo
+  const usarTextoLibre = (act === 'custom' || act === 'otro');
+  if (equipoWrap) equipoWrap.style.display = usarTextoLibre ? 'none' : 'block';
+  if (equipoCustom) equipoCustom.style.display = usarTextoLibre ? 'block' : 'none';
+
+  // Botón gestionar equipos: solo para cosecha y flete
+  if (gestionBtn) gestionBtn.style.display = (act === 'cosecha' || act === 'flete') ? 'inline-flex' : 'none';
+  if (gestionBtn) gestionBtn.onclick = () => abrirGestionEquipos(act === 'flete' ? 'flete' : 'cosecha');
+
   sel.innerHTML = '<option value="">— Seleccionar —</option>';
   if (act === 'flete') {
-    // Listar camiones registrados
     Object.values(camiones).forEach(c => {
       const o = document.createElement('option');
       o.value = c.dominios; o.textContent = `🚛 ${c.dominios} — ${c.chofer_nombre||''}`;
       sel.appendChild(o);
     });
-    const o2 = document.createElement('option'); o2.value='otro'; o2.textContent='Otro camión'; sel.appendChild(o2);
+    (cisterna.equipos_flete_extra||[]).forEach(e => {
+      const o = document.createElement('option'); o.value = e; o.textContent = '🚛 ' + e; sel.appendChild(o);
+    });
+    const o2 = document.createElement('option'); o2.value='__otro__'; o2.textContent='Otro (texto libre)'; sel.appendChild(o2);
   } else if (act === 'cosecha') {
-    ['Cosechadora JD S780','Cosechadora Deutz','Tractor grande','Tractor chico','Pulverizadora'].forEach(m => {
+    getEquiposCosecha().forEach(m => {
       const o = document.createElement('option'); o.value = m; o.textContent = '🌾 ' + m; sel.appendChild(o);
     });
-    const o2 = document.createElement('option'); o2.value='otro'; o2.textContent='Otra maquinaria'; sel.appendChild(o2);
-  } else {
-    const o = document.createElement('option'); o.value='otro'; o.textContent='Otro'; sel.appendChild(o);
+    const o2 = document.createElement('option'); o2.value='__otro__'; o2.textContent='Otro (texto libre)'; sel.appendChild(o2);
   }
+  // Handle "otro libre" selection
+  sel.onchange = () => {
+    if (sel.value === '__otro__') {
+      if (equipoWrap) equipoWrap.style.display = 'none';
+      if (equipoCustom) { equipoCustom.style.display = 'block'; equipoCustom.focus(); }
+    } else {
+      if (equipoWrap) equipoWrap.style.display = 'block';
+      if (equipoCustom) equipoCustom.style.display = 'none';
+    }
+  };
 }
 
 function cargarFotoMedidor(input) {
@@ -5213,33 +6756,43 @@ function getLitrosRetiro() {
 function registrarRetiro() {
   const litros    = getLitrosRetiro();
   const fecha     = document.getElementById('ret-fecha').value;
-  const actividad = document.getElementById('ret-actividad').value;
-  const equipo    = document.getElementById('ret-equipo').value;
+  const actRaw    = document.getElementById('ret-actividad').value;
+  const actividad = actRaw === 'custom'
+    ? (document.getElementById('ret-custom-act').value.trim() || 'Otra actividad')
+    : actRaw;
+  const usarTextoLibre = (actRaw === 'custom' || actRaw === 'otro');
+  const selEquipo = document.getElementById('ret-equipo').value;
+  const equipo = (usarTextoLibre || selEquipo === '__otro__')
+    ? (document.getElementById('ret-equipo-custom').value.trim() || '—')
+    : (selEquipo || '—');
   const obs       = document.getElementById('ret-obs').value.trim();
   const alertEl   = document.getElementById('ret-alert');
 
   if (!litros || litros <= 0)  { alertEl.innerHTML='<div class="alert alert-danger">Ingresá los litros retirados (medidor o manual).</div>'; return; }
   if (!fecha)                  { alertEl.innerHTML='<div class="alert alert-danger">Seleccioná la fecha.</div>'; return; }
-  if (!actividad)              { alertEl.innerHTML='<div class="alert alert-danger">Seleccioná la actividad.</div>'; return; }
+  if (!actRaw)                 { alertEl.innerHTML='<div class="alert alert-danger">Seleccioná la actividad.</div>'; return; }
   if (litros > saldoTotal())   { alertEl.innerHTML=`<div class="alert alert-danger">Stock insuficiente. Saldo: ${Math.round(saldoTotal()).toLocaleString('es-AR')} L</div>`; return; }
 
   const fifo = descontarFIFO(litros);
-  cisterna.movimientos.push({
-    tipo:'retiro', fecha, litros, actividad, equipo: equipo||'—', obs,
+  const mov = {
+    id: Date.now(),
+    tipo:'retiro', fecha, litros, actividad, actividad_raw: actRaw, equipo, obs,
     costo_total: fifo.costo_total, detalle_fifo: fifo.detalle,
     foto: _retFotoBase64 || null,
     med_ant: parseFloat(document.getElementById('ret-med-ant').value)||null,
     med_act: parseFloat(document.getElementById('ret-med-act').value)||null,
-  });
+  };
+  cisterna.movimientos.push(mov);
 
   guardarEstado();
   alertEl.innerHTML = `<div class="alert alert-success">✅ Retiro registrado — ${litros.toLocaleString('es-AR')} L · Costo: $${fifo.costo_total.toLocaleString('es-AR')}</div>`;
-  ['ret-med-ant','ret-med-act','ret-litros-manual','ret-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['ret-med-ant','ret-med-act','ret-litros-manual','ret-obs','ret-custom-act','ret-equipo-custom'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('ret-litros-display').textContent = '—';
   document.getElementById('ret-costo-preview').style.display = 'none';
   document.getElementById('ret-foto-preview').innerHTML = '';
   _retFotoBase64 = null;
   renderResumenCisterna();
+  if (_combTabActual === 'historial') renderHistorial();
 }
 
 // ── HISTORIAL ─────────────────────────────────────────────────────
@@ -5276,6 +6829,8 @@ function renderHistorial() {
         ${m.remito ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">📄 Remito: ${m.remito}</div>` : ''}
       </div>`;
     } else {
+      // Asegurar que el movimiento tenga id
+      if (!m.id) m.id = Date.now() + Math.random();
       return `<div class="retiro-card">
         <div class="retiro-card-top">
           <div style="display:flex;flex-direction:column;gap:4px">
@@ -5292,12 +6847,346 @@ function renderHistorial() {
             <div style="text-align:right">
               <div style="font-weight:700;color:var(--red);font-size:14px">-${fk(m.litros)} L</div>
               <div style="font-size:11px;color:var(--text3)">${$f(m.costo_total||0)}</div>
+              <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
+                <button onclick="abrirEditarRetiro(${m.id})" style="padding:3px 10px;font-size:11px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue);border-radius:4px;cursor:pointer;font-family:var(--sans)">✏️ Editar</button>
+                <button onclick="eliminarRetiro(${m.id})" style="padding:3px 10px;font-size:11px;background:#FEE2E2;color:#B91C1C;border:1px solid #FCA5A5;border-radius:4px;cursor:pointer;font-family:var(--sans)">🗑 Eliminar</button>
+              </div>
             </div>
           </div>
         </div>
       </div>`;
     }
   }).join('');
+}
+
+// ── EQUIPOS POR CATEGORÍA ────────────────────────────────────────
+function getEquiposCosecha() {
+  const base = ['Cosechadora JD S780','Cosechadora Deutz','Tractor grande','Tractor chico','Pulverizadora'];
+  const extras = cisterna.equipos_cosecha || [];
+  return [...base, ...extras];
+}
+function getEquiposFleteExtra() {
+  return cisterna.equipos_flete_extra || [];
+}
+
+function abrirGestionEquipos(categoria) {
+  const modal = document.createElement('div');
+  modal.id = 'modal-equipos';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  const titulo = categoria === 'cosecha' ? '🌾 Equipos de maquinaria' : '🚛 Camiones extra';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--radius-lg);padding:24px;max-width:440px;width:100%">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700">${titulo}</div>
+        <button onclick="document.getElementById('modal-equipos').remove();actualizarDestinosRetiro()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3)">✕</button>
+      </div>
+      <div id="lista-equipos-modal" style="margin-bottom:14px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="nuevo-equipo-input" placeholder="Nombre del equipo / patente..." style="flex:1;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text);font-family:var(--sans)" onkeydown="if(event.key==='Enter')agregarEquipo('${categoria}')">
+        <button onclick="agregarEquipo('${categoria}')" style="padding:7px 14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--sans)">+ Agregar</button>
+      </div>
+      <div id="equipo-modal-alert" style="margin-top:8px"></div>
+    </div>`;
+  document.body.appendChild(modal);
+  renderListaEquiposModal(categoria);
+}
+
+function renderListaEquiposModal(categoria) {
+  const lista = document.getElementById('lista-equipos-modal');
+  if (!lista) return;
+  const base = categoria === 'cosecha'
+    ? ['Cosechadora JD S780','Cosechadora Deutz','Tractor grande','Tractor chico','Pulverizadora']
+    : [];
+  const extras = categoria === 'cosecha' ? (cisterna.equipos_cosecha||[]) : (cisterna.equipos_flete_extra||[]);
+
+  let html = '';
+  if (base.length) {
+    html += base.map(e => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg2);border-radius:var(--radius);margin-bottom:5px">
+        <span style="font-size:13px">${e}</span>
+        <span style="font-size:11px;color:var(--text3)">predeterminado</span>
+      </div>`).join('');
+  }
+  if (extras.length) {
+    html += extras.map((e,i) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:5px" id="equipo-item-${i}">
+        <span style="font-size:13px" id="equipo-text-${i}">${e}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button onclick="editarEquipo('${categoria}',${i})" style="padding:2px 8px;font-size:11px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue);border-radius:4px;cursor:pointer;font-family:var(--sans)">✏️</button>
+          <button onclick="eliminarEquipo('${categoria}',${i})" style="padding:2px 8px;font-size:11px;background:#FEE2E2;color:#B91C1C;border:1px solid #FCA5A5;border-radius:4px;cursor:pointer;font-family:var(--sans)">🗑</button>
+        </div>
+      </div>`).join('');
+  }
+  if (!base.length && !extras.length) {
+    html = '<div style="font-size:13px;color:var(--text3);padding:8px 0">Sin equipos cargados.</div>';
+  }
+  lista.innerHTML = html;
+}
+
+function agregarEquipo(categoria) {
+  const input = document.getElementById('nuevo-equipo-input');
+  const nombre = input.value.trim();
+  const alertEl = document.getElementById('equipo-modal-alert');
+  if (!nombre) { alertEl.innerHTML='<div class="alert alert-danger">Escribí un nombre.</div>'; return; }
+  if (categoria === 'cosecha') {
+    if (!cisterna.equipos_cosecha) cisterna.equipos_cosecha = [];
+    cisterna.equipos_cosecha.push(nombre);
+  } else {
+    if (!cisterna.equipos_flete_extra) cisterna.equipos_flete_extra = [];
+    cisterna.equipos_flete_extra.push(nombre);
+  }
+  input.value = '';
+  alertEl.innerHTML = '';
+  guardarEstado();
+  renderListaEquiposModal(categoria);
+}
+
+function editarEquipo(categoria, idx) {
+  const arr = categoria === 'cosecha' ? cisterna.equipos_cosecha : cisterna.equipos_flete_extra;
+  const item = document.getElementById('equipo-item-' + idx);
+  const span = document.getElementById('equipo-text-' + idx);
+  const actual = arr[idx];
+  item.innerHTML = `
+    <input type="text" id="eq-edit-${idx}" value="${actual}" style="flex:1;padding:4px 8px;border:1px solid var(--blue);border-radius:var(--radius);font-size:13px;width:200px">
+    <div style="display:flex;gap:6px;margin-left:8px">
+      <button onclick="confirmarEditarEquipo('${categoria}',${idx})" style="padding:2px 10px;font-size:11px;background:var(--green);color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:var(--sans)">✓</button>
+      <button onclick="renderListaEquiposModal('${categoria}')" style="padding:2px 8px;font-size:11px;background:var(--bg3);color:var(--text2);border:none;border-radius:4px;cursor:pointer;font-family:var(--sans)">✕</button>
+    </div>`;
+  item.style.display = 'flex';
+  item.style.alignItems = 'center';
+  item.style.gap = '8px';
+  document.getElementById('eq-edit-' + idx).focus();
+}
+
+function confirmarEditarEquipo(categoria, idx) {
+  const val = document.getElementById('eq-edit-' + idx)?.value.trim();
+  if (!val) return;
+  if (categoria === 'cosecha') cisterna.equipos_cosecha[idx] = val;
+  else cisterna.equipos_flete_extra[idx] = val;
+  guardarEstado();
+  renderListaEquiposModal(categoria);
+}
+
+function eliminarEquipo(categoria, idx) {
+  if (!confirm('¿Eliminar este equipo de la lista?')) return;
+  if (categoria === 'cosecha') cisterna.equipos_cosecha.splice(idx, 1);
+  else cisterna.equipos_flete_extra.splice(idx, 1);
+  guardarEstado();
+  renderListaEquiposModal(categoria);
+}
+
+// ── ELIMINAR RETIRO ───────────────────────────────────────────────
+function eliminarRetiro(movId) {
+  if (!confirm('¿Eliminár este retiro? Los litros se reintegrarán al stock.')) return;
+  const idx = cisterna.movimientos.findIndex(m => m.id === movId);
+  if (idx === -1) return;
+  const mov = cisterna.movimientos[idx];
+  // Reintegrar litros FIFO en reversa (al lote más reciente primero)
+  reintegrarFIFO(mov.litros, mov.detalle_fifo);
+  cisterna.movimientos.splice(idx, 1);
+  guardarEstado();
+  renderResumenCisterna();
+  renderHistorial();
+}
+
+function reintegrarFIFO(litros, detalleFifo) {
+  if (detalleFifo && detalleFifo.length) {
+    // Reintegrar exactamente según el detalle original
+    detalleFifo.forEach(d => {
+      const lote = cisterna.lotes.find(l => l.id === d.lote_id);
+      if (lote) lote.litros_disp += d.litros;
+    });
+  } else {
+    // Fallback: reintegrar al lote más reciente con espacio
+    let restante = litros;
+    for (let i = cisterna.lotes.length - 1; i >= 0 && restante > 0; i--) {
+      const lote = cisterna.lotes[i];
+      const espacio = lote.litros_total - lote.litros_disp;
+      const agregar = Math.min(espacio, restante);
+      lote.litros_disp += agregar;
+      restante -= agregar;
+    }
+  }
+}
+
+// ── EDITAR RETIRO ─────────────────────────────────────────────────
+let _editando_retiro_id = null;
+
+function abrirEditarRetiro(movId) {
+  const mov = cisterna.movimientos.find(m => m.id === movId);
+  if (!mov) return;
+  _editando_retiro_id = movId;
+
+  // Crear modal
+  const modal = document.createElement('div');
+  modal.id = 'modal-editar-retiro';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  const actRaw = mov.actividad_raw || (
+    mov.actividad === 'flete' ? 'flete' :
+    mov.actividad === 'cosecha' ? 'cosecha' :
+    ['flete','cosecha','otro'].includes(mov.actividad) ? mov.actividad : 'custom'
+  );
+  const isCustom = !['flete','cosecha','otro'].includes(actRaw);
+  const usarTextoLibre = (actRaw === 'custom' || actRaw === 'otro' || isCustom);
+
+  // Opciones de equipo para cosecha y flete
+  let equipoOptions = '';
+  if (actRaw === 'flete') {
+    equipoOptions = Object.values(camiones).map(c =>
+      `<option value="${c.dominios}" ${mov.equipo===c.dominios?'selected':''}>${c.dominios} — ${c.chofer_nombre||''}</option>`
+    ).join('') + `<option value="otro" ${mov.equipo==='otro'?'selected':''}>Otro camión</option>`;
+  } else if (actRaw === 'cosecha') {
+    equipoOptions = getEquiposCosecha().map(m =>
+      `<option value="${m}" ${mov.equipo===m?'selected':''}>${m}</option>`
+    ).join('') + `<option value="__otro__">Otro (texto libre)</option>`;
+  }
+
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--radius-lg);padding:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div style="font-size:15px;font-weight:700">✏️ Editar retiro</div>
+        <button onclick="cerrarEditarRetiro()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3)">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="config-field">
+          <label>Litros retirados</label>
+          <input type="number" id="edit-litros" value="${mov.litros}" min="0" style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;width:100%">
+        </div>
+        <div class="config-field">
+          <label>Fecha</label>
+          <input type="date" id="edit-fecha" value="${mov.fecha}" style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;width:100%">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="config-field">
+          <label>Actividad</label>
+          <select id="edit-actividad" onchange="editActividadChange()" style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;width:100%">
+            <option value="flete" ${actRaw==='flete'?'selected':''}>Flete (camión)</option>
+            <option value="cosecha" ${actRaw==='cosecha'?'selected':''}>Maquinaria agrícola</option>
+            <option value="otro" ${actRaw==='otro'?'selected':''}>Otro</option>
+            <option value="custom" ${isCustom?'selected':''}>Otra actividad...</option>
+          </select>
+        </div>
+        <div class="config-field" id="edit-custom-act-wrap" style="display:${isCustom?'block':'none'}">
+          <label>Nombre actividad</label>
+          <input type="text" id="edit-custom-act" value="${isCustom?mov.actividad:''}" placeholder="Ej: Riego..." style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;width:100%">
+        </div>
+      </div>
+
+      <div class="config-field" style="margin-bottom:12px">
+        <label>Equipo / Patente</label>
+        <div id="edit-equipo-wrap" style="display:${usarTextoLibre?'none':'block'}">
+          <select id="edit-equipo" style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;width:100%">
+            <option value="">— Seleccionar —</option>
+            ${equipoOptions}
+          </select>
+        </div>
+        <input type="text" id="edit-equipo-custom" value="${usarTextoLibre?mov.equipo:''}" placeholder="Ej: ABC123, Propio..." style="display:${usarTextoLibre?'block':'none'};padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;width:100%">
+      </div>
+
+      <div class="config-field" style="margin-bottom:16px">
+        <label>Observaciones</label>
+        <input type="text" id="edit-obs" value="${mov.obs||''}" placeholder="Opcional..." style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;width:100%">
+      </div>
+
+      <div id="edit-alert" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="cerrarEditarRetiro()" style="padding:8px 20px;background:var(--bg3);color:var(--text2);border:none;border-radius:var(--radius);cursor:pointer;font-size:13px;font-family:var(--sans)">Cancelar</button>
+        <button onclick="guardarEdicionRetiro()" style="padding:8px 20px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--sans)">💾 Guardar cambios</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+}
+
+function editActividadChange() {
+  const act = document.getElementById('edit-actividad').value;
+  const isCustom = act === 'custom';
+  const usarTextoLibre = act === 'custom' || act === 'otro';
+  document.getElementById('edit-custom-act-wrap').style.display = isCustom ? 'block' : 'none';
+  document.getElementById('edit-equipo-wrap').style.display = usarTextoLibre ? 'none' : 'block';
+  document.getElementById('edit-equipo-custom').style.display = usarTextoLibre ? 'block' : 'none';
+
+  const sel = document.getElementById('edit-equipo');
+  sel.innerHTML = '<option value="">— Seleccionar —</option>';
+  if (act === 'flete') {
+    Object.values(camiones).forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.dominios; o.textContent = c.dominios + ' — ' + (c.chofer_nombre||'');
+      sel.appendChild(o);
+    });
+    const o2 = document.createElement('option'); o2.value='otro'; o2.textContent='Otro camión'; sel.appendChild(o2);
+  } else if (act === 'cosecha') {
+    getEquiposCosecha().forEach(m => {
+      const o = document.createElement('option'); o.value = m; o.textContent = m; sel.appendChild(o);
+    });
+    const o2 = document.createElement('option'); o2.value='__otro__'; o2.textContent='Otro (texto libre)'; sel.appendChild(o2);
+  }
+  // Handle __otro__ in edit modal too
+  sel.onchange = () => {
+    const isOtro = sel.value === '__otro__';
+    document.getElementById('edit-equipo-wrap').style.display = isOtro ? 'none' : 'block';
+    document.getElementById('edit-equipo-custom').style.display = isOtro ? 'block' : 'none';
+    if (isOtro) document.getElementById('edit-equipo-custom').focus();
+  };
+}
+
+function cerrarEditarRetiro() {
+  const m = document.getElementById('modal-editar-retiro');
+  if (m) m.remove();
+  _editando_retiro_id = null;
+}
+
+function guardarEdicionRetiro() {
+  const idx = cisterna.movimientos.findIndex(m => m.id === _editando_retiro_id);
+  if (idx === -1) return;
+  const mov = cisterna.movimientos[idx];
+  const alertEl = document.getElementById('edit-alert');
+
+  const nuevosLitros = parseFloat(document.getElementById('edit-litros').value);
+  const fecha = document.getElementById('edit-fecha').value;
+  const actRaw = document.getElementById('edit-actividad').value;
+  const actividad = actRaw === 'custom'
+    ? (document.getElementById('edit-custom-act').value.trim() || 'Otra actividad')
+    : actRaw;
+  const usarTextoLibre = actRaw === 'custom' || actRaw === 'otro';
+  const selEditEquipo = document.getElementById('edit-equipo').value;
+  const equipo = (usarTextoLibre || selEditEquipo === '__otro__')
+    ? (document.getElementById('edit-equipo-custom').value.trim() || '—')
+    : (selEditEquipo || '—');
+  const obs = document.getElementById('edit-obs').value.trim();
+
+  if (!nuevosLitros || nuevosLitros <= 0) { alertEl.innerHTML='<div class="alert alert-danger">Litros inválidos.</div>'; return; }
+  if (!fecha) { alertEl.innerHTML='<div class="alert alert-danger">Seleccioná fecha.</div>'; return; }
+
+  // Reintegrar litros del retiro original
+  reintegrarFIFO(mov.litros, mov.detalle_fifo);
+
+  // Verificar que hay saldo para los nuevos litros
+  if (nuevosLitros > saldoTotal()) {
+    // Revertir reintegro
+    descontarFIFO(mov.litros);
+    alertEl.innerHTML=`<div class="alert alert-danger">Stock insuficiente para ${nuevosLitros} L. Saldo: ${Math.round(saldoTotal()).toLocaleString('es-AR')} L</div>`;
+    return;
+  }
+
+  // Descontar nuevos litros
+  const fifo = descontarFIFO(nuevosLitros);
+
+  // Actualizar movimiento
+  cisterna.movimientos[idx] = {
+    ...mov,
+    fecha, litros: nuevosLitros, actividad, actividad_raw: actRaw, equipo, obs,
+    costo_total: fifo.costo_total, detalle_fifo: fifo.detalle,
+  };
+
+  guardarEstado();
+  cerrarEditarRetiro();
+  renderResumenCisterna();
+  renderHistorial();
 }
 
 // ── LOGIN ──────────────────────────────────────────────────────────
@@ -5311,7 +7200,6 @@ function verificarPassword() {
   const ingresada = input.value;
 
   if (ingresada === PASSWORD_ACCESO) {
-    // Guardar sesión por 8 horas en localStorage
     const expira = Date.now() + (8 * 60 * 60 * 1000);
     localStorage.setItem('sg_sesion', expira);
     document.getElementById('login-screen').style.display = 'none';
@@ -5323,6 +7211,9 @@ function verificarPassword() {
     input.focus();
   }
 }
+// Registrar en window para que el script inline del head sepa que ya cargó
+window._verificarPasswordMain = verificarPassword;
+window._loginReady = true;
 
 function verificarSesion() {
   const expira = parseInt(localStorage.getItem('sg_sesion') || '0');
@@ -5466,13 +7357,19 @@ cargarEstado(); // _renderCompleto() se llama internamente al terminar
       </div>
       <div class="form-grid">
         <div class="form-group">
+          <label>Ubicación del bolsón</label>
+          <select id="edit-bolson-ubicacion">
+            <option value="">— Seleccionar campo —</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label>Fecha</label>
           <input type="date" id="edit-bolson-fecha">
         </div>
-        <div class="form-group">
-          <label>Observaciones</label>
-          <input type="text" id="edit-bolson-obs" placeholder="Observaciones">
-        </div>
+      </div>
+      <div class="form-group">
+        <label>Observaciones</label>
+        <input type="text" id="edit-bolson-obs" placeholder="Observaciones">
       </div>
 
       <div class="edit-section-title">Kilos ingresados totales</div>
@@ -5569,8 +7466,142 @@ cargarEstado(); // _renderCompleto() se llama internamente al terminar
 </div>
 <!-- ════════════════════════════════════════════════════════════════ -->
 
+<!-- ══ MODAL SELECCIÓN DE CAMPAÑA PARA PDF GLOBAL ══════════════════ -->
+<div id="modal-campania-pdf-overlay"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;
+            display:none;align-items:center;justify-content:center;padding:20px;
+            backdrop-filter:blur(3px)"
+     onclick="cerrarModalCampaniaPDF(event)">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;
+              width:100%;max-width:420px;box-shadow:0 24px 60px rgba(0,0,0,.25);
+              animation:modalIn .25s var(--ease) both"
+       onclick="event.stopPropagation()">
+    <!-- Header -->
+    <div style="padding:15px 20px;border-bottom:1px solid var(--border);
+                display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div id="modal-campania-titulo" style="font-size:14px;font-weight:600;color:var(--text)">
+          Cargar Liquidación
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">
+          Asigná la campaña antes de seleccionar el PDF
+        </div>
+      </div>
+      <button onclick="cerrarModalCampaniaPDF()" style="background:none;border:none;font-size:22px;
+               cursor:pointer;color:var(--text3);line-height:1;padding:0 4px">×</button>
+    </div>
+    <!-- Body -->
+    <div style="padding:20px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">
+        Campaña / Cosecha <span style="font-weight:400;color:var(--text3)">(obligatorio)</span>
+      </div>
+      <!-- Selector de campañas existentes -->
+      <select id="modal-campania-sel"
+        style="width:100%;padding:9px 11px;border:1.5px solid var(--border2);border-radius:var(--radius);
+               background:white;color:var(--text);font-family:var(--sans);font-size:13px;margin-bottom:8px"
+        onchange="if(this.value) document.getElementById('modal-campania-nueva').value=''">
+        <option value="">— Campaña existente —</option>
+      </select>
+      <!-- O ingresá una nueva -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div style="flex:0 0 auto;width:1px;height:28px;background:var(--border)"></div>
+        <span style="font-size:11px;color:var(--text3)">o ingresá una nueva</span>
+      </div>
+      <input type="text" id="modal-campania-nueva" placeholder="Ej: 25/26" maxlength="10"
+        style="width:100%;padding:9px 11px;border:1.5px solid var(--border2);border-radius:var(--radius);
+               background:white;color:var(--text);font-family:var(--sans);font-size:13px"
+        oninput="if(this.value.trim()) document.getElementById('modal-campania-sel').value=''">
+      <div id="modal-campania-error"
+           style="display:none;margin-top:8px;padding:8px 12px;background:var(--amber-bg);
+                  border-left:3px solid var(--amber);border-radius:var(--radius);
+                  font-size:12px;color:var(--amber)">
+        ⚠️ Seleccioná o ingresá la campaña antes de continuar.
+      </div>
+    </div>
+    <!-- Footer -->
+    <div style="padding:13px 20px;border-top:1px solid var(--border);
+                display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" style="font-size:12px" onclick="cerrarModalCampaniaPDF()">
+        Cancelar
+      </button>
+      <button class="btn btn-green" style="width:auto;padding:9px 22px;font-size:13px"
+              onclick="confirmarCampaniaPDF()">
+        Continuar → Elegir PDF
+      </button>
+    </div>
+  </div>
+</div>
+<!-- ════════════════════════════════════════════════════════════════ -->
+
 <script>
-// ── SIDEBAR RESPONSIVE ──────────────────────────────────────────────
+// ── MODAL CAMPAÑA PDF GLOBAL ─────────────────────────────────────────
+let _modalPDFTipo = null; // 'liquidacion' | 'certificacion'
+
+function abrirModalCampaniaPDF(tipo) {
+  _modalPDFTipo = tipo;
+  const overlay = document.getElementById('modal-campania-pdf-overlay');
+  const titulo  = document.getElementById('modal-campania-titulo');
+  const sel     = document.getElementById('modal-campania-sel');
+  const nueva   = document.getElementById('modal-campania-nueva');
+  const errEl   = document.getElementById('modal-campania-error');
+
+  titulo.textContent = tipo === 'liquidacion' ? '📋 Cargar Liquidación' : '📄 Cargar Certificación';
+  nueva.value = '';
+  errEl.style.display = 'none';
+
+  // Poblar selector con todas las campañas conocidas de todos los acopios
+  const todasCampanias = new Set();
+  Object.values(acopios).forEach(a => {
+    (a.movimientos || []).forEach(m => {
+      if (m.campania) todasCampanias.add(m.campania);
+    });
+  });
+  sel.innerHTML = '<option value="">— Campaña existente —</option>';
+  [...todasCampanias].sort().forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = 'Campaña ' + c;
+    sel.appendChild(opt);
+  });
+
+  overlay.style.display = 'flex';
+  setTimeout(() => nueva.focus(), 80);
+}
+
+function cerrarModalCampaniaPDF(evt) {
+  if (evt && evt.target !== document.getElementById('modal-campania-pdf-overlay')) return;
+  document.getElementById('modal-campania-pdf-overlay').style.display = 'none';
+  _modalPDFTipo = null;
+}
+
+function confirmarCampaniaPDF() {
+  const sel   = document.getElementById('modal-campania-sel');
+  const nueva = document.getElementById('modal-campania-nueva');
+  const errEl = document.getElementById('modal-campania-error');
+  const camp  = nueva.value.trim() || sel.value;
+
+  if (!camp) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  // Guardar campaña elegida y cerrar modal
+  window._globalCampaniaPDF = camp;
+  document.getElementById('modal-campania-pdf-overlay').style.display = 'none';
+
+  // Abrir el file picker correspondiente
+  const inputId = _modalPDFTipo === 'liquidacion' ? 'global-liq-input' : 'global-cert-input';
+  document.getElementById(inputId).value = ''; // reset por si mismo archivo
+  document.getElementById(inputId).click();
+}
+// Enter en el campo de campaña nueva dispara confirmar
+document.addEventListener('DOMContentLoaded', () => {
+  const nv = document.getElementById('modal-campania-nueva');
+  if (nv) nv.addEventListener('keydown', e => { if (e.key === 'Enter') confirmarCampaniaPDF(); });
+});
+</script>
+
+<script>
 function toggleSidebar() {
   const sidebar  = document.getElementById('sidebar');
   const overlay  = document.getElementById('sidebar-overlay');
